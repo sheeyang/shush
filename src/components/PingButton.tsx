@@ -1,47 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useStreamFetch } from "@/helpers/useStreamFetch";
 
 export default function PingButton() {
-    const [pingResult, setPingResult] = useState<string>("");
-    const [isLoading, setIsLoading] = useState<boolean>(false);
-    const [isStreaming, setIsStreaming] = useState<boolean>(false);
+    const { data: pingResult, isLoading, isStreaming, error, fetchStream } = useStreamFetch();
 
     const handlePing = async () => {
-        try {
-            setIsLoading(true);
-            setPingResult(""); // Clear previous results
-            setIsStreaming(true);
-
-            const response = await fetch("http://localhost:3000/api/ping/www.google.com");
-
-            if (!response.body) {
-                setPingResult("Error: Response body is null");
-                return;
-            }
-
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-
-            // Process the stream
-            while (true) {
-                const { done, value } = await reader.read();
-
-                if (done) {
-                    break;
-                }
-
-                // Decode the chunk and append to result
-                const chunk = decoder.decode(value, { stream: true });
-                setPingResult(prev => prev + chunk);
-            }
-        } catch (error) {
-            setPingResult("Error: Failed to ping");
-            console.error(error);
-        } finally {
-            setIsLoading(false);
-            setIsStreaming(false);
-        }
+        await fetchStream("http://localhost:3000/api/ping/www.google.com");
     };
 
     return (
@@ -54,9 +19,12 @@ export default function PingButton() {
                 {isLoading ? "Pinging..." : "Ping Google"}
             </button>
 
-            {(pingResult || isStreaming) && (
+            {(pingResult || isStreaming || error) && (
                 <div className="mt-4 p-4 border rounded-md bg-gray-50 dark:bg-gray-800 w-full max-w-md overflow-auto max-h-[200px]">
-                    <pre className="text-sm whitespace-pre-wrap">{pingResult || "Waiting for response..."}</pre>
+                    <pre className="text-sm whitespace-pre-wrap">
+                        {error ? `Error: ${error}` :
+                            (pingResult || "Waiting for response...")}
+                    </pre>
                 </div>
             )}
         </div>
