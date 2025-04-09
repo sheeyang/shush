@@ -1,9 +1,10 @@
 "use client";
 
 import { useStreamFetch } from "@/hooks/useStreamFetch";
+import CommandOutput from "@/components/CommandOutput";
 
 export default function PingButton() {
-    const { data: pingResult, isStreaming, error, fetchStream, killStream } = useStreamFetch();
+    const { data, isStreaming, error, fetchStream, killStream } = useStreamFetch();
 
     const handlePing = async () => {
         await fetchStream("http://localhost:3000/api/ping/www.google.com");
@@ -28,15 +29,7 @@ export default function PingButton() {
                     </button>
                 )}
             </div>
-            <div className="mt-4 p-4 border rounded-md bg-gray-50 dark:bg-gray-800 w-full max-w-md overflow-auto max-h-[200px]">
-                <pre className="text-sm whitespace-pre-wrap">
-                    {
-                        error
-                            ? `Error: ${error}`
-                            : (pingResult || "")
-                    }
-                </pre>
-            </div>
+            <CommandOutput output={data} error={error} />
         </div>
     );
 }

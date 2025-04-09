@@ -2,9 +2,10 @@
 
 import { useStreamFetch } from "@/hooks/useStreamFetch";
 import { useState } from "react";
+import CommandOutput from "./CommandOutput";
 
 export default function TikTokButton() {
-    const { data: pingResult, isStreaming, error, fetchStream } = useStreamFetch();
+    const { data, isStreaming, error, fetchStream } = useStreamFetch();
     const [username, setUsername] = useState("");
 
     const handlePing = async () => {
@@ -29,15 +30,7 @@ export default function TikTokButton() {
                     {isStreaming ? "Loading..." : "Search"}
                 </button>
             </div>
-            <div className="mt-4 p-4 border rounded-md bg-gray-50 dark:bg-gray-800 w-full max-w-md overflow-auto max-h-[200px]">
-                <pre className="text-sm whitespace-pre-wrap">
-                    {
-                        error
-                            ? `Error: ${error}`
-                            : (pingResult || "")
-                    }
-                </pre>
-            </div>
+            <CommandOutput output={data} error={error} />
         </div>
     );
 }
