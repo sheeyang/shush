@@ -26,7 +26,7 @@ export function createCommandStream(command: string, args: string[]) {
 
     const stream = new ReadableStream({
         start(controller) {
-            const process = spawn(command, args);
+            const process = spawn(command, args, { shell: true });
 
             // Store the process with its ID
             activeProcesses.set(processId, process);

@@ -8,8 +8,8 @@ interface CommandOutputProps {
 
 export default function CommandOutput({ output, error, maxHeight = "200px" }: CommandOutputProps) {
     return (
-        <div className={`mt-4 p-4 border rounded-md bg-gray-50 dark:bg-gray-800 w-full max-w-md overflow-auto max-h-[${maxHeight}]`}>
-            <pre className="text-sm whitespace-pre-wrap">
+        <div className="mt-4 p-4 border border-black/[.08] dark:border-white/[.145] rounded-md bg-[#f9f9f9] dark:bg-[#121212] w-full max-w-md overflow-auto" style={{ maxHeight }}>
+            <pre className="text-sm whitespace-pre-wrap text-black/90 dark:text-white/90">
                 {
                     error
                         ? `Error: ${error}`
