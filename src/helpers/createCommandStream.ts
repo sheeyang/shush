@@ -84,12 +84,26 @@ export function createCommandStream(command: string, args: string[]) {
 }
 
 // Function to kill a process by its ID
+// ... existing code ...
 export function killProcess(processId: string): boolean {
     const process = activeProcesses.get(processId);
     if (process) {
+        // Windows-specific process termination
+        if (process.pid) {
+            try {
+                // On Windows, we need to use taskkill to ensure the process tree is killed
+                spawn('taskkill', ['/pid', process.pid.toString(), '/f', '/t']);
+                activeProcesses.delete(processId);
+                return true;
+            } catch (error) {
+                console.error('Error killing process:', error);
+                return false;
+            }
+        }
         process.kill();
         activeProcesses.delete(processId);
         return true;
     }
     return false;
 }
+// ... existing code ...
