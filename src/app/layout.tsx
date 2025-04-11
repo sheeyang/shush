@@ -33,11 +33,9 @@ export default async function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}  >
         <SidebarProvider defaultOpen={defaultOpen}>
           <AppSidebar />
-          <div className="flex-1 relative">
+          <div className="flex relative w-full h-full">
             <SidebarTrigger className="absolute top-2 left-2 z-10 size-10" />
-            <div className="flex justify-center items-start w-full">
-              {children}
-            </div>
+            {children}
           </div>
         </SidebarProvider>
       </body>
