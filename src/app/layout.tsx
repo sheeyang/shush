@@ -35,7 +35,7 @@ export default async function RootLayout({
           <AppSidebar />
           <div className="flex-1 relative">
             <SidebarTrigger className="absolute top-2 left-2 z-10 size-10" />
-            <div className="flex justify-center items-start w-full p-8">
+            <div className="flex justify-center items-start w-full">
               {children}
             </div>
           </div>
