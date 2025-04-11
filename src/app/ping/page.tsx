@@ -1,8 +1,8 @@
 "use client";
 
-import CommandOutput from "@/components/CommandOutput";
+import CommandOutput from "@/components/command-output";
 import { Button } from "@/components/ui/button";
-import { useStreamFetch } from "@/hooks/useStreamFetch";
+import { useStreamFetch } from "@/hooks/use-stream-fetch";
 
 export default function PingPage() {
     const { data, isStreaming, error, fetchStream, killStream } = useStreamFetch();
