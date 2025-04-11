@@ -1,3 +1,5 @@
+import 'server-only'
+
 import { spawn, ChildProcess } from 'child_process';
 import crypto from 'crypto';
 import fs from 'fs';
