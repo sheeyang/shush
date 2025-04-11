@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import Sidebar from "@/components/Sidebar";
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
+import { AppSidebar } from "@/components/ShushSidebar";
+import { cookies } from "next/headers"
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,20 +20,26 @@ export const metadata: Metadata = {
   description: "Command line utilities in the browser",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies()
+  const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
+
   return (
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}  >
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <div className="flex-1 p-8">
-            {children}
+        <SidebarProvider defaultOpen={defaultOpen}>
+          <AppSidebar />
+          <div className="flex-1 relative">
+            <SidebarTrigger className="absolute top-2 left-2 z-10 size-10" />
+            <div className="flex justify-center items-start w-full p-8">
+              {children}
+            </div>
           </div>
-        </div>
+        </SidebarProvider>
       </body>
     </html>
   );

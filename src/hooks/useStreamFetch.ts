@@ -51,9 +51,9 @@ export function useStreamFetch() {
                 const response = await fetch(`/api/kill/${processId}`);
                 const result = await response.json();
 
-                setData(prev => prev + (result.success
-                    ? '\nProcess terminated by user.\n'
-                    : '\nProcess not found.\n'));
+                if (!result.success) {
+                    throw new Error(result.message);
+                }
 
                 setIsStreaming(false);
             } catch (error) {
