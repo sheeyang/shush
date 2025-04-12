@@ -8,11 +8,11 @@ import { useProcesses } from '@/hooks/use-processes';
 import { useState } from 'react';
 
 export default function PingPage() {
-  const [address, setAddress] = useState('www.google.com');
+  const [address, setAddress] = useState('localhost');
   const { processes, addProcess } = useProcesses();
 
   const handleSubmit = () => {
-    addProcess(`api/ping/${address}`, address);
+    addProcess('ping', [address], address);
   };
 
   return (

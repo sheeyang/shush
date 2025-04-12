@@ -1,22 +1,34 @@
-import { useState } from "react";
+import { createProcessAction } from '@/app/actions';
+import { useCallback, useState } from 'react';
 
 type ProcessInfo = {
-    processId: string;
-    label: string; 
-}
+  processId: string;
+  label: string;
+};
 
 export function useProcesses() {
-    const [processes, setProcesses] = useState<ProcessInfo[]>([])
+  const [processes, setProcesses] = useState<ProcessInfo[]>([]);
 
-    const addProcess = async (url: string, label: string) => {
+  const addProcess = useCallback(
+    async (command: string, args: string[], label: string) => {
+      const { success, message, processId } = await createProcessAction(
+        command,
+        args,
+      );
 
-        const processId = (await fetch(url)).headers.get('X-Process-ID') || 'failed' ; // TODO: add error handling
+      if (!success) {
+        throw new Error(message);
+      }
 
-        setProcesses([...processes, {processId,  label}]);
-    }
+      setProcesses([...processes, { processId, label }]);
 
-    return {
-        processes,
-        addProcess
-    }
+      console.log(processes);
+    },
+    [processes],
+  );
+
+  return {
+    processes,
+    addProcess,
+  };
 }

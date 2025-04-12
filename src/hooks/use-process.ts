@@ -1,17 +1,23 @@
+import { killProcessAction, runProcessAction } from '@/app/actions';
+import { runProcess } from '@/helpers/createCommandStream';
 import { useState, useCallback } from 'react';
 
 export function useProcess(processId: string) {
   const [data, setData] = useState('');
-  const [isRunning, setIsRunning] = useState(false);
+  const [processState, setProcessState] = useState('initialized'); // TODO: intial state should be 'terminated'
   const [error, setError] = useState<string | null>(null);
 
   const connectProcessStream = useCallback(async () => {
     setData('');
-    setIsRunning(true);
     setError(null);
 
     try {
       const response = await fetch(`/api/connect/${processId}`);
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Failed to connect to process');
+      }
 
       if (!response.body) {
         throw new Error('Response body is null');
@@ -35,36 +41,38 @@ export function useProcess(processId: string) {
         error instanceof Error ? error.message : 'An unknown error occurred',
       );
     } finally {
-      setIsRunning(false);
+      setProcessState('terminated');
     }
-  }, []);
+  }, [processId]);
 
   const killProcess = useCallback(async () => {
-    if (processId) {
-      try {
-        const response = await fetch(`/api/kill/${processId}`);
-        const result = await response.json();
+    const { success, message, processState } =
+      await killProcessAction(processId);
 
-        if (!result.success) {
-          throw new Error(result.message);
-        }
-
-        setIsRunning(false);
-      } catch (error) {
-        setError(
-          error instanceof Error
-            ? error.message
-            : 'Failed to terminate process',
-        );
-      }
+    if (!success) {
+      setError(message);
     }
-  }, []);
+
+    setProcessState(processState);
+  }, [processId]);
+
+  const runProcess = useCallback(async () => {
+    const { success, message, processState } =
+      await runProcessAction(processId);
+
+    if (!success) {
+      setError(message);
+    }
+
+    setProcessState(processState);
+  }, [processId]);
 
   return {
     data,
-    isStreaming: isRunning,
+    processState,
     error,
     connectProcessStream,
     killProcess,
+    runProcess,
   };
 }

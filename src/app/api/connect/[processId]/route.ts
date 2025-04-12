@@ -7,7 +7,11 @@ export async function GET(
 ) {
   const { processId } = await params;
 
-  const { stream } = connectCommandStream(processId);
+  const { success, message, stream } = connectCommandStream(processId);
+
+  if (!success) {
+    return new Response(message, { status: 404 });
+  }
 
   return new Response(stream, {
     headers: {
