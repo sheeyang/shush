@@ -1,12 +1,24 @@
 import 'server-only';
 
-import { spawn, ChildProcess } from 'child_process';
+import {
+  spawn,
+  ChildProcess,
+  ChildProcessWithoutNullStreams,
+} from 'child_process';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
+type ProcessInfo = {
+  process: ChildProcessWithoutNullStreams;
+  processId: string;
+  command: string;
+  args: string[];
+  output: string;
+};
+
 // Store active processes with their IDs
-const activeProcesses = new Map<string, ChildProcess>();
+const activeProcesses = new Map<string, ProcessInfo>();
 
 // Helper function to create a stream from a command
 export function createCommandStream(command: string, args: string[]) {
@@ -14,7 +26,7 @@ export function createCommandStream(command: string, args: string[]) {
   const processId = crypto.randomUUID();
 
   // Create logs directory if it doesn't exist
-  const logsDir = path.join(process.cwd(), 'logs');
+  const logsDir = 'logs';
   if (!fs.existsSync(logsDir)) {
     fs.mkdirSync(logsDir, { recursive: true });
   }
@@ -26,18 +38,110 @@ export function createCommandStream(command: string, args: string[]) {
   logStream.write(`Command: ${command} ${args.join(' ')}\n`);
   logStream.write(`Started at: ${new Date().toISOString()}\n\n`);
 
+  const process = spawn(command, args, { shell: true });
+
+  // Store the process with its ID
+  activeProcesses.set(processId, {
+    process,
+    processId,
+    command,
+    args,
+    output: '',
+  });
+
+  const processInfo = activeProcesses.get(processId);
+
+  if (processInfo === undefined) {
+    return { processId: null };
+  }
+
+  process.stdout.on('data', (data) => {
+    const output = data.toString();
+
+    // Log to server
+    logStream.write(output);
+
+    // Save to output history
+    processInfo.output += output;
+  });
+
+  process.stderr.on('data', (data) => {
+    const errorOutput = `Error: ${data.toString()}`;
+
+    // Log to server
+    logStream.write(errorOutput);
+
+    // Save to output history
+    processInfo.output += errorOutput;
+  });
+
+  process.on('close', (code) => {
+    const closeMessage = `\nProcess exited with code ${code}`;
+
+    // Log to server
+    logStream.write(`${closeMessage}\nEnded at: ${new Date().toISOString()}\n`);
+    logStream.end();
+
+    // Save to output history
+    processInfo.output += closeMessage;
+  });
+
+  process.on('error', (err) => {
+    const errorMessage = `\nProcess error: ${err.message}`;
+
+    // Log to server
+    logStream.write(`${errorMessage}\nEnded at: ${new Date().toISOString()}\n`);
+    logStream.end();
+
+    // Save to output history
+    processInfo.output += errorMessage;
+  });
+
+  return { processId };
+}
+
+// Function to kill a process by its ID
+export function killProcess(processId: string): boolean {
+  const { process } = activeProcesses.get(processId) || {};
+  if (process) {
+    // Windows-specific process termination
+    if (process.pid) {
+      try {
+        // On Windows, we need to use taskkill to ensure the process tree is killed
+        spawn('taskkill', ['/pid', process.pid.toString(), '/f', '/t']);
+        // activeProcesses.delete(processId);
+        return true;
+      } catch (error) {
+        console.error('Error killing process:', error);
+        return false;
+      }
+    }
+    process.kill();
+    // activeProcesses.delete(processId);
+    return true;
+  }
+  return false;
+}
+
+export function connectCommandStream(processId: string) {
+  // Create logs directory if it doesn't exist
+  const logsDir = 'logs';
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+  }
   const stream = new ReadableStream({
     start(controller) {
-      const process = spawn(command, args, { shell: true });
+      const processInfo = activeProcesses.get(processId);
+      if (processInfo === undefined) {
+        return;
+      }
+      const { process } = processInfo;
 
-      // Store the process with its ID
-      activeProcesses.set(processId, process);
+      // Send the existing output to the client
+      controller.enqueue(processInfo.output);
 
       process.stdout.on('data', (data) => {
         const output = data.toString();
-
-        // Log to server
-        logStream.write(output);
 
         // Send to client
         controller.enqueue(output);
@@ -46,9 +150,6 @@ export function createCommandStream(command: string, args: string[]) {
       process.stderr.on('data', (data) => {
         const errorOutput = `Error: ${data.toString()}`;
 
-        // Log to server
-        logStream.write(errorOutput);
-
         // Send to client
         controller.enqueue(errorOutput);
       });
@@ -56,58 +157,22 @@ export function createCommandStream(command: string, args: string[]) {
       process.on('close', (code) => {
         const closeMessage = `\nProcess exited with code ${code}`;
 
-        // Log to server
-        logStream.write(
-          `${closeMessage}\nEnded at: ${new Date().toISOString()}\n`,
-        );
-        logStream.end();
-
         // Send to client
         controller.enqueue(closeMessage);
-        activeProcesses.delete(processId);
+        // activeProcesses.delete(processId);
         controller.close();
       });
 
       process.on('error', (err) => {
         const errorMessage = `\nProcess error: ${err.message}`;
 
-        // Log to server
-        logStream.write(
-          `${errorMessage}\nEnded at: ${new Date().toISOString()}\n`,
-        );
-        logStream.end();
-
         // Send to client
         controller.enqueue(errorMessage);
-        activeProcesses.delete(processId);
+        // activeProcesses.delete(processId);
         controller.close();
       });
     },
   });
 
-  // Return both the stream and the processId
-  return { stream, processId };
+  return { stream };
 }
-
-// Function to kill a process by its ID
-export function killProcess(processId: string): boolean {
-  const process = activeProcesses.get(processId);
-  if (process) {
-    // Windows-specific process termination
-    if (process.pid) {
-      try {
-        // On Windows, we need to use taskkill to ensure the process tree is killed
-        spawn('taskkill', ['/pid', process.pid.toString(), '/f', '/t']);
-        activeProcesses.delete(processId);
-        return true;
-      } catch (error) {
-        console.error('Error killing process:', error);
-        return false;
-      }
-    }
-    process.kill();
-    activeProcesses.delete(processId);
-    return true;
-  }
-  return false;
-} 

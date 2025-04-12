@@ -1,34 +1,17 @@
 import { useState, useCallback } from 'react';
 
-export type StreamFetchResult = {
-  data: string;
-  isStreaming: boolean;
-  error: string | null;
-  processId: string | null;
-  fetchStream: (url: string) => Promise<void>;
-  killStream: () => Promise<void>;
-};
-
-export function useStreamFetch(): StreamFetchResult {
+export function useProcess(processId: string) {
   const [data, setData] = useState('');
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [processId, setProcessId] = useState<string | null>(null);
 
-  const fetchStream = useCallback(async (url: string) => {
+  const connectProcessStream = useCallback(async () => {
     setData('');
-    setIsStreaming(true);
+    setIsRunning(true);
     setError(null);
-    setProcessId(null);
 
     try {
-      const response = await fetch(url);
-
-      // Get the process ID from headers
-      const currentProcessId = response.headers.get('X-Process-ID');
-      if (currentProcessId) {
-        setProcessId(currentProcessId);
-      }
+      const response = await fetch(`/api/connect/${processId}`);
 
       if (!response.body) {
         throw new Error('Response body is null');
@@ -52,11 +35,11 @@ export function useStreamFetch(): StreamFetchResult {
         error instanceof Error ? error.message : 'An unknown error occurred',
       );
     } finally {
-      setIsStreaming(false);
+      setIsRunning(false);
     }
   }, []);
 
-  const killStream = useCallback(async () => {
+  const killProcess = useCallback(async () => {
     if (processId) {
       try {
         const response = await fetch(`/api/kill/${processId}`);
@@ -66,7 +49,7 @@ export function useStreamFetch(): StreamFetchResult {
           throw new Error(result.message);
         }
 
-        setIsStreaming(false);
+        setIsRunning(false);
       } catch (error) {
         setError(
           error instanceof Error
@@ -75,14 +58,13 @@ export function useStreamFetch(): StreamFetchResult {
         );
       }
     }
-  }, [processId]);
+  }, []);
 
   return {
     data,
-    isStreaming,
+    isStreaming: isRunning,
     error,
-    processId,
-    fetchStream,
-    killStream,
+    connectProcessStream,
+    killProcess,
   };
 }

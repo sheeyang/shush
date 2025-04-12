@@ -4,14 +4,15 @@ import CommandCard from '@/components/command-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { useProcesses } from '@/hooks/use-processes';
 import { useState } from 'react';
 
 export default function PingPage() {
   const [address, setAddress] = useState('www.google.com');
-  const [streamList, setStreamList] = useState<string[]>([]);
+  const { processes, addProcess } = useProcesses();
 
   const handleSubmit = () => {
-    setStreamList([...streamList, address]);
+    addProcess(`api/ping/${address}`, address);
   };
 
   return (
@@ -28,12 +29,11 @@ export default function PingPage() {
           </Button>
         </CardContent>
       </Card>
-      {streamList.map((address, index) => (
+      {processes.map(({ processId, label }, index) => (
         <CommandCard
-          key={`${address}-${index}`}
-          api={'http://localhost:3000/api/ping'}
-          endpoint={address}
-          label={address}
+          key={`${processId}-${index}`}
+          processId={processId}
+          label={label}
         />
       ))}
     </div>

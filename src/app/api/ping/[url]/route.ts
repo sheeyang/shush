@@ -8,14 +8,14 @@ export async function GET(
   const { url } = await params;
 
   // Use the helper function to create the stream
-  const { stream, processId } = createCommandStream('ping', [url]);
+  const { processId } = createCommandStream('ping', [url]);
 
   // Return a streaming response with the process ID in headers
-  return new Response(stream, {
+  return new Response(processId ? 'success' : 'fail', {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
       'Transfer-Encoding': 'chunked',
-      'X-Process-ID': processId,
+      'X-Process-ID': processId ? processId : '',
     },
   });
 }

@@ -2,28 +2,28 @@ import { Label } from '@radix-ui/react-label';
 import { Button } from './ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
 import CommandOutput from './command-output';
-import { useStreamFetch } from '@/hooks/use-stream-fetch';
+import { useProcess } from '@/hooks/use-process';
 
 export default function CommandCard({
-  api,
-  endpoint,
+  processId,
   label,
 }: {
-  api: string;
-  endpoint: string;
+  processId: string;
   label: string;
 }) {
-  const { data, isStreaming, error, processId, fetchStream, killStream } =
-    useStreamFetch();
+  const { data, isStreaming, error, connectProcessStream, killProcess } =
+    useProcess(processId);
+
   const handleSubmit = async () => {
-    await fetchStream(`${api}/${endpoint}`);
+    await connectProcessStream();
   };
+
   return (
     <Card className='w-lg'>
       <CardHeader className='flex items-center'>
         <Label className='w-full'>{label}</Label>
         {isStreaming && (
-          <Button id='stop' variant='destructive' onClick={killStream}>
+          <Button id='stop' variant='destructive' onClick={killProcess}>
             Stop
           </Button>
         )}

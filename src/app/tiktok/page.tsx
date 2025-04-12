@@ -1,7 +1,7 @@
 'use client';
 
 import CommandOutput from '@/components/command-output';
-import { useStreamFetch } from '@/hooks/use-stream-fetch';
+import { useStreamFetch } from '@/hooks/use-process';
 import { useState } from 'react';
 
 export default function TikTokPage() {
