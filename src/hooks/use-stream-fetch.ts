@@ -1,6 +1,15 @@
 import { useState, useCallback } from 'react';
 
-export function useStreamFetch() {
+export type StreamFetchResult = {
+    data: string;
+    isStreaming: boolean;
+    error: string | null;
+    processId: string | null;
+    fetchStream: (url: string) => Promise<void>;
+    killStream: () => Promise<void>;
+};
+
+export function useStreamFetch(): StreamFetchResult {
     const [data, setData] = useState('');
     const [isStreaming, setIsStreaming] = useState(false);
     const [error, setError] = useState<string | null>(null);
