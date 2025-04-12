@@ -1,9 +1,9 @@
-"use client"
+'use client';
 
-import * as React from "react"
-import * as ScrollAreaPrimitive from "@radix-ui/react-scroll-area"
+import * as React from 'react';
+import * as ScrollAreaPrimitive from '@radix-ui/react-scroll-area';
 
-import { cn } from "@/lib/utils"
+import { cn } from '@/lib/utils';
 
 function ScrollArea({
   className,
@@ -12,65 +12,68 @@ function ScrollArea({
 }: React.ComponentProps<typeof ScrollAreaPrimitive.Root>) {
   return (
     <ScrollAreaPrimitive.Root
-      data-slot="scroll-area"
-      className={cn("relative", className)}
+      data-slot='scroll-area'
+      className={cn('relative', className)}
       {...props}
     >
       <ScrollAreaPrimitive.Viewport
-        data-slot="scroll-area-viewport"
-        className="focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1"
+        data-slot='scroll-area-viewport'
+        className='focus-visible:ring-ring/50 size-full rounded-[inherit] transition-[color,box-shadow] outline-none focus-visible:ring-[3px] focus-visible:outline-1'
       >
         {children}
       </ScrollAreaPrimitive.Viewport>
       <ScrollBar />
       <ScrollAreaPrimitive.Corner />
     </ScrollAreaPrimitive.Root>
-  )
+  );
 }
 
 function ScrollBar({
   className,
-  orientation = "vertical",
+  orientation = 'vertical',
   ...props
 }: React.ComponentProps<typeof ScrollAreaPrimitive.ScrollAreaScrollbar>) {
   return (
     <ScrollAreaPrimitive.ScrollAreaScrollbar
-      data-slot="scroll-area-scrollbar"
+      data-slot='scroll-area-scrollbar'
       orientation={orientation}
       className={cn(
-        "flex touch-none p-px transition-colors select-none",
-        orientation === "vertical" &&
-        "h-full w-2.5 border-l border-l-transparent",
-        orientation === "horizontal" &&
-        "h-2.5 flex-col border-t border-t-transparent",
-        className
+        'flex touch-none p-px transition-colors select-none',
+        orientation === 'vertical' &&
+          'h-full w-2.5 border-l border-l-transparent',
+        orientation === 'horizontal' &&
+          'h-2.5 flex-col border-t border-t-transparent',
+        className,
       )}
       {...props}
     >
       <ScrollAreaPrimitive.ScrollAreaThumb
-        data-slot="scroll-area-thumb"
-        className="bg-border relative flex-1 rounded-full"
+        data-slot='scroll-area-thumb'
+        className='bg-border relative flex-1 rounded-full'
       />
     </ScrollAreaPrimitive.ScrollAreaScrollbar>
-  )
+  );
 }
 
-
-interface ResizableScrollAreaProps extends React.HTMLAttributes<HTMLDivElement> {
+interface ResizableScrollAreaProps
+  extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   initialHeight?: number;
   minHeight?: number;
   maxHeight?: number;
   handleClassName?: string;
-  scrollAreaProps?: Omit<React.ComponentProps<typeof ScrollAreaPrimitive.Root>, 'children' | 'className' | 'style'>;
+  scrollAreaProps?: Omit<
+    React.ComponentProps<typeof ScrollAreaPrimitive.Root>,
+    'children' | 'className' | 'style'
+  >;
 }
 
 function ResizableScrollArea({
   children,
   className,
   initialHeight = 200, // Default initial height
-  minHeight = 100,     // Default min height
-  maxHeight = 600,    // Default max height
+  minHeight = 100, // Default min height
+  maxHeight = 600, // Default max height
   handleClassName,
   scrollAreaProps, // Pass additional props to the inner ScrollArea
   ...props // Pass rest of the props to the main wrapper div
@@ -93,17 +96,20 @@ function ResizableScrollArea({
     document.addEventListener('mouseup', handleMouseUp);
   };
 
-  const handleMouseMove = React.useCallback((e: MouseEvent) => {
-    const currentY = e.clientY;
-    const deltaY = currentY - startYRef.current;
-    let newHeight = startHeightRef.current + deltaY;
+  const handleMouseMove = React.useCallback(
+    (e: MouseEvent) => {
+      const currentY = e.clientY;
+      const deltaY = currentY - startYRef.current;
+      let newHeight = startHeightRef.current + deltaY;
 
-    // Apply constraints
-    newHeight = Math.max(minHeight, newHeight);
-    newHeight = Math.min(maxHeight, newHeight);
+      // Apply constraints
+      newHeight = Math.max(minHeight, newHeight);
+      newHeight = Math.min(maxHeight, newHeight);
 
-    setHeight(newHeight);
-  }, [minHeight, maxHeight]);
+      setHeight(newHeight);
+    },
+    [minHeight, maxHeight],
+  );
 
   const handleMouseUp = React.useCallback(() => {
     setIsResizing(false);
@@ -123,15 +129,15 @@ function ResizableScrollArea({
     <div
       ref={wrapperRef}
       className={cn(
-        "relative overflow-hidden border border-input rounded-md",
-        className
+        'border-input relative overflow-hidden rounded-md border',
+        className,
       )}
       style={{ height: `${height}px` }}
       {...props}
     >
       {/* The original ScrollArea now fills the wrapper */}
       <ScrollArea
-        className="h-full" // Make ScrollArea fill the wrapper height
+        className='h-full' // Make ScrollArea fill the wrapper height
         {...scrollAreaProps} // Pass through other ScrollArea specific props
       >
         {children}
@@ -139,12 +145,12 @@ function ResizableScrollArea({
 
       {/* Resize Handle */}
       <div
-        data-slot="resize-handle"
+        data-slot='resize-handle'
         onMouseDown={handleMouseDown}
         className={cn(
-          "absolute bottom-0 left-0 w-full h-2 cursor-ns-resize bg-muted hover:bg-muted-foreground/20 transition-colors", // Style the handle
-          isResizing && "bg-muted-foreground/30",
-          handleClassName
+          'bg-muted hover:bg-muted-foreground/20 absolute bottom-0 left-0 h-2 w-full cursor-ns-resize transition-colors', // Style the handle
+          isResizing && 'bg-muted-foreground/30',
+          handleClassName,
         )}
         style={{ zIndex: 10 }} // Ensure handle is above scrollbar corner if they overlap
       />
