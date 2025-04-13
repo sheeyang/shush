@@ -3,7 +3,7 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
 import CommandOutput from './command-output';
 import { useProcess } from '@/hooks/use-process';
-import { useRemoveProcess } from '@/stores/pingStore';
+import { usePingActions } from '@/stores/pingStore';
 import { X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -29,7 +29,7 @@ export default function CommandCard({
     await connectProcessStream();
   };
 
-  const removeProcess = useRemoveProcess();
+  const { removeProcess } = usePingActions();
 
   const handleRemove = () => {
     setIsDeleting(true);

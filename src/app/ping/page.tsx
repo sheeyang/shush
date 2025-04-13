@@ -5,16 +5,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
-import { useAddCommandProcess, useProcesses } from '../../stores/pingStore';
+import { usePingActions, usePingProcesses } from '../../stores/pingStore';
 
 export default function PingPage() {
   const [address, setAddress] = useState('localhost');
-  const processes = useProcesses();
-  const addProcess = useAddCommandProcess();
+  const processes = usePingProcesses();
+  const { addCommandProcess } = usePingActions();
 
   const handleSubmit = async () => {
     try {
-      await addProcess('ping', [address], address);
+      await addCommandProcess('ping', [address], address);
     } catch (error) {
       console.error('Failed to add process:', error);
     }
@@ -34,7 +34,7 @@ export default function PingPage() {
           </Button>
         </CardContent>
       </Card>
-      {processes.map(({ processId, label }) => (
+      {Object.entries(processes).map(([processId, { label }]) => (
         <CommandCard key={processId} processId={processId} label={label} />
       ))}
     </div>

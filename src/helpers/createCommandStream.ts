@@ -1,25 +1,10 @@
 import 'server-only';
 
-import {
-  spawn,
-  ChildProcess,
-  ChildProcessWithoutNullStreams,
-} from 'child_process';
+import { spawn } from 'child_process';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-
-type ProcessState = 'intialized' | 'running' | 'terminated';
-
-type ProcessInfo = {
-  process: ChildProcessWithoutNullStreams | null;
-  processId: string;
-  command: string;
-  args: string[];
-  output: string;
-  createdAt: number;
-  state: ProcessState;
-};
+import { ProcessInfoServer, ProcessState } from '@/interfaces/process';
 
 // Store active processes with their IDs
 // Using a global variable with Symbol ensures it's a singleton
@@ -28,11 +13,14 @@ const ACTIVE_PROCESSES_KEY = Symbol.for('activeProcesses');
 
 // Initialize the map if it doesn't exist
 if (!globalActiveProcesses[ACTIVE_PROCESSES_KEY]) {
-  globalActiveProcesses[ACTIVE_PROCESSES_KEY] = new Map<string, ProcessInfo>();
+  globalActiveProcesses[ACTIVE_PROCESSES_KEY] = new Map<
+    string,
+    ProcessInfoServer
+  >();
 }
 
 // Get the active processes map
-const activeProcesses: Map<string, ProcessInfo> =
+const activeProcesses: Map<string, ProcessInfoServer> =
   globalActiveProcesses[ACTIVE_PROCESSES_KEY];
 
 // Helper function to create a stream from a command
@@ -41,14 +29,13 @@ export function addProcess(command: string, args: string[]) {
   const processId = crypto.randomUUID();
 
   // Create process info before storing
-  const processInfo: ProcessInfo = {
+  const processInfo: ProcessInfoServer = {
     process: null,
-    processId,
     command,
     args,
     output: '',
     createdAt: Date.now(),
-    state: 'intialized',
+    processState: 'initialized',
   };
 
   // Store the process with its ID
@@ -63,11 +50,15 @@ export function addProcess(command: string, args: string[]) {
     success: true,
     message: 'Successfully added process',
     processId,
-    processState: processInfo.state,
+    processState: processInfo.processState,
   };
 }
 
-export function runProcess(processId: string) {
+export function runProcess(processId: string): {
+  success: boolean;
+  message: string;
+  processState: ProcessState;
+} {
   const processInfo = activeProcesses.get(processId);
   if (!processInfo) {
     return {
@@ -97,7 +88,7 @@ export function runProcess(processId: string) {
 
   const child = processInfo.process;
 
-  processInfo.state = 'running';
+  processInfo.processState = 'running';
 
   child.stdout.on('data', (data) => {
     const output = data.toString();
@@ -144,12 +135,16 @@ export function runProcess(processId: string) {
   return {
     success: true,
     message: 'Successfully ran process',
-    processState: processInfo.state,
+    processState: processInfo.processState,
   };
 }
 
 // Function to kill a process by its ID
-export function killProcess(processId: string) {
+export function killProcess(processId: string): {
+  success: boolean;
+  message: string;
+  processState: ProcessState;
+} {
   const processInfo = activeProcesses.get(processId);
   if (processInfo?.process) {
     try {
@@ -167,14 +162,14 @@ export function killProcess(processId: string) {
       return {
         success: true,
         message: 'Process terminated',
-        processState: processInfo.state,
+        processState: processInfo.processState,
       };
     } catch (error) {
       console.error('Error killing process:', error);
       return {
         success: false,
         message: 'Error killing process',
-        processState: processInfo.state,
+        processState: processInfo.processState,
       };
     }
   }
@@ -195,7 +190,7 @@ export function removeProcess(processId: string) {
     };
   }
 
-  killProcess(processInfo.processId);
+  killProcess(processId);
 
   activeProcesses.delete(processId);
   return {
@@ -229,7 +224,7 @@ export function connectCommandStream(processId: string) {
           success: false,
           message: `Process ${processId} not found`,
           stream: null,
-          processState: processInfo.state,
+          processState: processInfo.processState,
         };
       }
 
@@ -268,6 +263,6 @@ export function connectCommandStream(processId: string) {
     success: true,
     message: 'Successfully connected to process stream',
     stream,
-    processState: processInfo.state,
+    processState: processInfo.processState,
   };
 }

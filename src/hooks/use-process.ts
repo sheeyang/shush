@@ -1,5 +1,4 @@
 import { killProcessAction, runProcessAction } from '@/app/actions';
-import { runProcess } from '@/helpers/createCommandStream';
 import { useState, useCallback } from 'react';
 
 export function useProcess(processId: string) {
