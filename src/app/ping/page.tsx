@@ -21,7 +21,7 @@ export default function PingPage() {
   };
 
   return (
-    <div className='flex min-h-[calc(100vh-2rem)] w-full flex-col items-center gap-2 overflow-y-auto pt-[20vh]'>
+    <div className='flex min-h-[calc(100vh-2rem)] w-full flex-col items-center gap-4 overflow-y-auto pt-[20vh] pb-8'>
       <Card className='w-lg'>
         <CardContent className='flex flex-row gap-2'>
           <Input
