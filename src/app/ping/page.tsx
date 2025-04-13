@@ -34,12 +34,8 @@ export default function PingPage() {
           </Button>
         </CardContent>
       </Card>
-      {processes.map(({ processId, label }, index) => (
-        <CommandCard
-          key={`${processId}-${index}`}
-          processId={processId}
-          label={label}
-        />
+      {processes.map(({ processId, label }) => (
+        <CommandCard key={processId} processId={processId} label={label} />
       ))}
     </div>
   );
