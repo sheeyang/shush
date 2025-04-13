@@ -4,12 +4,13 @@ import CommandCard from '@/components/command-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useProcesses } from '@/hooks/use-processes';
 import { useState } from 'react';
+import { useAddCommandProcess, useProcesses } from '../stores/pingStore';
 
 export default function PingPage() {
   const [address, setAddress] = useState('localhost');
-  const { processes, addProcess } = useProcesses();
+  const processes = useProcesses();
+  const addProcess = useAddCommandProcess();
 
   const handleSubmit = () => {
     addProcess('ping', [address], address);
