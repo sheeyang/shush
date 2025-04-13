@@ -2,10 +2,9 @@ import { Button } from './ui/button';
 import { Label } from './ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
 import CommandOutput from './command-output';
-import { useProcess } from '@/hooks/use-process';
-import { usePingActions, usePingProcesses } from '@/stores/pingStore';
 import { X } from 'lucide-react';
 import { useState } from 'react';
+import { usePingActions, usePingProcess } from '@/stores/pingStore';
 
 export default function CommandCard({
   processId,
@@ -16,15 +15,16 @@ export default function CommandCard({
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const { processState, data } = usePingProcesses()[processId];
-  const { runProcess, killProcess, connectProcessStream } = usePingActions();
+  // Use the specific process selector instead of all processes
+  const process = usePingProcess(processId);
+  const { processState, data } = process;
+  const { runProcess, killProcess, connectProcessStream, removeProcess } =
+    usePingActions();
 
   const handleSubmit = async () => {
     await runProcess(processId);
     await connectProcessStream(processId);
   };
-
-  const { removeProcess } = usePingActions();
 
   const handleRemove = () => {
     setIsDeleting(true);

@@ -159,4 +159,8 @@ const usePingStore = create<PingStore>((set) => ({
 
 export const usePingProcesses = () => usePingStore((state) => state.processes);
 
+// Add this new selector for individual processes
+export const usePingProcess = (processId: string) =>
+  usePingStore((state) => state.processes[processId]);
+
 export const usePingActions = () => usePingStore((state) => state.actions);
