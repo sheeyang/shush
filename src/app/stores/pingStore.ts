@@ -1,6 +1,5 @@
-import { addProcess } from '@/helpers/createCommandStream';
 import { create } from 'zustand';
-import { createProcessAction } from '../actions';
+import { createProcessAction, removeProcessAction } from '../actions';
 
 type ProcessInfo = {
   processId: string;
@@ -14,6 +13,7 @@ type PingStoreActions = {
     args: string[],
     label: string,
   ) => Promise<void>;
+  removeProcess: (processId: string) => Promise<void>;
 };
 
 type PingStore = {
@@ -25,10 +25,11 @@ const usePingStore = create<PingStore>((set) => ({
   processes: [],
 
   actions: {
-    addProcess: (processId: string, label: string) =>
+    addProcess: (processId: string, label: string) => {
       set((state) => ({
         processes: [...state.processes, { processId, label }],
-      })),
+      }));
+    },
 
     addCommandProcess: async (
       command: string,
@@ -48,6 +49,20 @@ const usePingStore = create<PingStore>((set) => ({
         processes: [...state.processes, { processId, label }],
       }));
     },
+
+    removeProcess: async (processId: string) => {
+      const { success, message } = await removeProcessAction(processId);
+
+      if (!success) {
+        throw new Error(message);
+      }
+
+      set((state) => ({
+        processes: state.processes.filter(
+          (process) => process.processId !== processId,
+        ),
+      }));
+    },
   },
 }));
 
@@ -58,3 +73,6 @@ export const useAddProcess = () =>
 
 export const useAddCommandProcess = () =>
   usePingStore((state) => state.actions.addCommandProcess);
+
+export const useRemoveProcess = () =>
+  usePingStore((state) => state.actions.removeProcess);

@@ -1,21 +1,17 @@
 'use client';
 
-import CommandOutput from '@/components/command-output';
-import { useStreamFetch } from '@/hooks/use-process';
-import { useState } from 'react';
-
 export default function TikTokPage() {
-  const { data, isStreaming, error, fetchStream, killStream } =
-    useStreamFetch();
-  const [username, setUsername] = useState('');
+  // const { data, isStreaming, error, fetchStream, killStream } =
+  //   useStreamFetch();
+  // const [username, setUsername] = useState('');
 
-  const handlePing = async () => {
-    await fetchStream(`http://localhost:3000/api/tiktok/${username}`);
-  };
+  // const handlePing = async () => {
+  //   await fetchStream(`http://localhost:3000/api/tiktok/${username}`);
+  // };
 
   return (
     <div className='flex min-h-[calc(100vh-2rem)] flex-col items-center justify-center'>
-      <h1 className='mb-8 text-2xl font-bold'>TikTok Utility</h1>
+      {/* <h1 className='mb-8 text-2xl font-bold'>TikTok Utility</h1>
       <div className='flex flex-col items-center'>
         <div className='mb-4 flex w-full max-w-md gap-2'>
           <input
@@ -41,7 +37,7 @@ export default function TikTokPage() {
           </button>
         </div>
         <CommandOutput output={data} error={error} />
-      </div>
+      </div> */}
     </div>
   );
 }

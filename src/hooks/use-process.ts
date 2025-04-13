@@ -7,6 +7,28 @@ export function useProcess(processId: string) {
   const [processState, setProcessState] = useState('initialized'); // TODO: intial state should be 'terminated'
   const [error, setError] = useState<string | null>(null);
 
+  const runProcess = useCallback(async () => {
+    const { success, message, processState } =
+      await runProcessAction(processId);
+
+    if (!success) {
+      setError(message);
+    }
+
+    setProcessState(processState);
+  }, [processId]);
+
+  const killProcess = useCallback(async () => {
+    const { success, message, processState } =
+      await killProcessAction(processId);
+
+    if (!success) {
+      setError(message);
+    }
+
+    setProcessState(processState);
+  }, [processId]);
+
   const connectProcessStream = useCallback(async () => {
     setData('');
     setError(null);
@@ -45,34 +67,12 @@ export function useProcess(processId: string) {
     }
   }, [processId]);
 
-  const killProcess = useCallback(async () => {
-    const { success, message, processState } =
-      await killProcessAction(processId);
-
-    if (!success) {
-      setError(message);
-    }
-
-    setProcessState(processState);
-  }, [processId]);
-
-  const runProcess = useCallback(async () => {
-    const { success, message, processState } =
-      await runProcessAction(processId);
-
-    if (!success) {
-      setError(message);
-    }
-
-    setProcessState(processState);
-  }, [processId]);
-
   return {
     data,
     processState,
     error,
-    connectProcessStream,
-    killProcess,
     runProcess,
+    killProcess,
+    connectProcessStream,
   };
 }

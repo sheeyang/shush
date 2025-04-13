@@ -12,8 +12,12 @@ export default function PingPage() {
   const processes = useProcesses();
   const addProcess = useAddCommandProcess();
 
-  const handleSubmit = () => {
-    addProcess('ping', [address], address);
+  const handleSubmit = async () => {
+    try {
+      await addProcess('ping', [address], address);
+    } catch (error) {
+      console.error('Failed to add process:', error);
+    }
   };
 
   return (

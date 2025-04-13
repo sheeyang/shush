@@ -97,6 +97,8 @@ export function runProcess(processId: string) {
 
   const child = processInfo.process;
 
+  processInfo.state = 'running';
+
   child.stdout.on('data', (data) => {
     const output = data.toString();
 
@@ -180,6 +182,25 @@ export function killProcess(processId: string) {
     success: false,
     message: 'Process not found',
     processState: 'terminated',
+  };
+}
+
+export function removeProcess(processId: string) {
+  const processInfo = activeProcesses.get(processId);
+
+  if (!processInfo) {
+    return {
+      success: false,
+      message: 'Process not found',
+    };
+  }
+
+  killProcess(processInfo.processId);
+
+  activeProcesses.delete(processId);
+  return {
+    success: true,
+    message: 'Process removed',
   };
 }
 
