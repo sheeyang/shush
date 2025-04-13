@@ -120,11 +120,6 @@ const usePingStore = create<PingStore>((set) => ({
           const chunk = decoder.decode(value, { stream: true });
           // Update process state with the new data
           set((state) => {
-            // in case the process is removed before the stream is finished
-            if (!state.processes[processId]) {
-              return state;
-            }
-
             return {
               processes: {
                 ...state.processes,
@@ -141,15 +136,22 @@ const usePingStore = create<PingStore>((set) => ({
           error instanceof Error ? error.message : 'An unknown error occurred',
         );
       } finally {
-        set((state) => ({
-          processes: {
-            ...state.processes,
-            [processId]: {
-              ...state.processes[processId],
-              processState: 'terminated',
+        set((state) => {
+          // Check if process was removed prematurely
+          if (!state.processes[processId]) {
+            return state;
+          }
+
+          return {
+            processes: {
+              ...state.processes,
+              [processId]: {
+                ...state.processes[processId],
+                processState: 'terminated',
+              },
             },
-          },
-        }));
+          };
+        });
       }
     },
   },

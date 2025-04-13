@@ -3,7 +3,7 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
 import CommandOutput from './command-output';
 import { useProcess } from '@/hooks/use-process';
-import { usePingActions } from '@/stores/pingStore';
+import { usePingActions, usePingProcesses } from '@/stores/pingStore';
 import { X } from 'lucide-react';
 import { useState } from 'react';
 
@@ -15,18 +15,13 @@ export default function CommandCard({
   label: string;
 }) {
   const [isDeleting, setIsDeleting] = useState(false);
-  const {
-    data,
-    processState,
-    error,
-    runProcess,
-    killProcess,
-    connectProcessStream,
-  } = useProcess(processId);
+
+  const { processState, data } = usePingProcesses()[processId];
+  const { runProcess, killProcess, connectProcessStream } = usePingActions();
 
   const handleSubmit = async () => {
-    await runProcess();
-    await connectProcessStream();
+    await runProcess(processId);
+    await connectProcessStream(processId);
   };
 
   const { removeProcess } = usePingActions();
@@ -41,7 +36,7 @@ export default function CommandCard({
       <CardHeader className='flex items-center'>
         <Label className='w-full'>{label}</Label>
         {processState === 'running' && (
-          <Button id='stop' variant='destructive' onClick={killProcess}>
+          <Button id='stop' variant='destructive' onClick={() => killProcess}>
             Stop
           </Button>
         )}
@@ -56,7 +51,7 @@ export default function CommandCard({
         </Button>
       </CardHeader>
       <CardContent>
-        <CommandOutput output={data} error={error} />
+        <CommandOutput output={data} error={null} />
       </CardContent>
       <CardFooter className='flex w-full flex-row gap-2'>
         <Label className='text-muted-foreground text-[10px]'>{processId}</Label>
