@@ -5,6 +5,7 @@ import CommandOutput from './command-output';
 import { useProcess } from '@/hooks/use-process';
 import { useRemoveProcess } from '@/stores/pingStore';
 import { X } from 'lucide-react';
+import { useState } from 'react';
 
 export default function CommandCard({
   processId,
@@ -13,6 +14,7 @@ export default function CommandCard({
   processId: string;
   label: string;
 }) {
+  const [isDeleting, setIsDeleting] = useState(false);
   const {
     data,
     processState,
@@ -29,8 +31,13 @@ export default function CommandCard({
 
   const removeProcess = useRemoveProcess();
 
+  const handleRemove = () => {
+    setIsDeleting(true);
+    removeProcess(processId);
+  };
+
   return (
-    <Card className='w-lg'>
+    <Card className={`w-lg ${isDeleting && 'pointer-events-none opacity-50'}`}>
       <CardHeader className='flex items-center'>
         <Label className='w-full'>{label}</Label>
         {processState === 'running' && (
@@ -44,11 +51,7 @@ export default function CommandCard({
           </Button>
         )}
 
-        <Button
-          id='start'
-          variant='ghost'
-          onClick={() => removeProcess(processId)}
-        >
+        <Button id='start' variant='ghost' onClick={handleRemove}>
           <X />
         </Button>
       </CardHeader>
