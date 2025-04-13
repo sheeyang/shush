@@ -4,6 +4,7 @@ import './globals.css';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/shush-sidebar';
 import { cookies } from 'next/headers';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -35,9 +36,11 @@ export default async function RootLayout({
       >
         <SidebarProvider defaultOpen={defaultOpen}>
           <AppSidebar />
-          <div className='relative flex h-full w-full'>
-            <SidebarTrigger className='absolute top-2 left-2 z-10 size-10' />
-            {children}
+          <div className='relative flex h-screen w-screen'>
+            <ScrollArea className='h-full w-full'>
+              <SidebarTrigger className='absolute top-2 left-2 z-10 size-10' />
+              {children}
+            </ScrollArea>
           </div>
         </SidebarProvider>
       </body>
