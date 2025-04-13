@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { createProcessAction, removeProcessAction } from '../actions';
+import { createProcessAction, removeProcessAction } from '../app/actions';
 
 type ProcessInfo = {
   processId: string;

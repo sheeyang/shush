@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
-import { useAddCommandProcess, useProcesses } from '../stores/pingStore';
+import { useAddCommandProcess, useProcesses } from '../../stores/pingStore';
 
 export default function PingPage() {
   const [address, setAddress] = useState('localhost');

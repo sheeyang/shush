@@ -1,10 +1,10 @@
-import { Label } from '@radix-ui/react-label';
 import { Button } from './ui/button';
+import { Label } from './ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
 import CommandOutput from './command-output';
 import { useProcess } from '@/hooks/use-process';
-import { runProcessAction } from '@/app/actions';
-import { useRemoveProcess } from '@/app/stores/pingStore';
+import { useRemoveProcess } from '@/stores/pingStore';
+import { X } from 'lucide-react';
 
 export default function CommandCard({
   processId,
@@ -46,10 +46,10 @@ export default function CommandCard({
 
         <Button
           id='start'
-          variant='destructive'
+          variant='ghost'
           onClick={() => removeProcess(processId)}
         >
-          Remove
+          <X />
         </Button>
       </CardHeader>
       <CardContent>

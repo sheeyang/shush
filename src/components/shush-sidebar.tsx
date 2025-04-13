@@ -1,4 +1,4 @@
-import { Calendar, Home, Inbox, Search, Settings } from 'lucide-react';
+import { Home, Inbox } from 'lucide-react';
 
 import {
   Sidebar,
@@ -24,21 +24,6 @@ const items = [
     url: '/tiktok',
     icon: Inbox,
   },
-  // {
-  //     title: "Calendar",
-  //     url: "#",
-  //     icon: Calendar,
-  // },
-  // {
-  //     title: "Search",
-  //     url: "#",
-  //     icon: Search,
-  // },
-  // {
-  //     title: "Settings",
-  //     url: "#",
-  //     icon: Settings,
-  // },
 ];
 
 export function AppSidebar() {
