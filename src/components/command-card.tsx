@@ -6,18 +6,12 @@ import { X } from 'lucide-react';
 import { useState } from 'react';
 import { usePingActions, usePingProcess } from '@/stores/pingStore';
 
-export default function CommandCard({
-  processId,
-  label,
-}: {
-  processId: string;
-  label: string;
-}) {
+export default function CommandCard({ processId }: { processId: string }) {
   const [isDeleting, setIsDeleting] = useState(false);
 
   // Use the specific process selector instead of all processes
   const process = usePingProcess(processId);
-  const { processState, data } = process;
+  const { processState, data, label } = process;
   const { runProcess, killProcess, connectProcessStream, removeProcess } =
     usePingActions();
 
@@ -36,7 +30,11 @@ export default function CommandCard({
       <CardHeader className='flex items-center'>
         <Label className='w-full'>{label}</Label>
         {processState === 'running' && (
-          <Button id='stop' variant='destructive' onClick={() => killProcess}>
+          <Button
+            id='stop'
+            variant='destructive'
+            onClick={() => killProcess(processId)}
+          >
             Stop
           </Button>
         )}

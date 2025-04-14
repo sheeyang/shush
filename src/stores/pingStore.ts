@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { immer } from 'zustand/middleware/immer';
 import {
   createProcessAction,
   killProcessAction,
@@ -21,145 +22,127 @@ type PingStoreActions = {
 
 type PingStore = {
   processes: { [key: string]: ProcessInfoClient };
+  processIds: string[]; // Keep a seperated array for IDs so we can use it to iterate over
   actions: PingStoreActions;
 };
 
-const usePingStore = create<PingStore>((set) => ({
-  processes: {},
+const usePingStore = create<PingStore>()(
+  immer((set) => ({
+    processes: {},
+    processIds: [], // Initialize the array
 
-  actions: {
-    addCommandProcess: async (
-      command: string,
-      args: string[],
-      label: string,
-    ) => {
-      const { success, message, processId, processState } =
-        await createProcessAction(command, args);
+    actions: {
+      addCommandProcess: async (
+        command: string,
+        args: string[],
+        label: string,
+      ) => {
+        const { success, message, processId, processState } =
+          await createProcessAction(command, args);
 
-      if (!success) {
-        throw new Error(message);
-      }
-
-      set((state) => ({
-        processes: {
-          ...state.processes,
-          [processId]: { label, processState, data: '' },
-        },
-      }));
-    },
-
-    removeProcess: async (processId: string) => {
-      const { success, message } = await removeProcessAction(processId);
-
-      if (!success) {
-        throw new Error(message);
-      }
-
-      set((state) => {
-        const newProcesses = { ...state.processes };
-        delete newProcesses[processId];
-        return { processes: newProcesses };
-      });
-    },
-
-    runProcess: async (processId: string) => {
-      const { success, message, processState } =
-        await runProcessAction(processId);
-
-      if (!success) {
-        throw new Error(message);
-      }
-
-      set((state) => ({
-        processes: {
-          ...state.processes,
-          [processId]: { ...state.processes[processId], processState },
-        },
-      }));
-    },
-
-    killProcess: async (processId: string) => {
-      const { success, message, processState } =
-        await killProcessAction(processId);
-
-      if (!success) {
-        throw new Error(message);
-      }
-
-      set((state) => ({
-        processes: {
-          ...state.processes,
-          [processId]: { ...state.processes[processId], processState },
-        },
-      }));
-    },
-
-    connectProcessStream: async (processId: string) => {
-      try {
-        const response = await fetch(`/api/connect/${processId}`);
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          throw new Error(errorText || 'Failed to connect to process');
+        if (!success) {
+          throw new Error(message);
         }
 
-        if (!response.body) {
-          throw new Error('Response body is null');
+        set((state) => {
+          state.processes[processId] = { label, processState, data: '' };
+          state.processIds = Object.keys(state.processes); // Update the IDs array
+        });
+      },
+
+      removeProcess: async (processId: string) => {
+        const { success, message } = await removeProcessAction(processId);
+
+        if (!success) {
+          throw new Error(message);
         }
 
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
+        set((state) => {
+          delete state.processes[processId];
+          state.processIds = Object.keys(state.processes); // Update the IDs array
+        });
+      },
 
-        while (true) {
-          const { done, value } = await reader.read();
+      runProcess: async (processId: string) => {
+        const { success, message, processState } =
+          await runProcessAction(processId);
 
-          if (done) {
-            break;
+        if (!success) {
+          throw new Error(message);
+        }
+
+        set((state) => {
+          state.processes[processId].processState = processState;
+        });
+      },
+
+      killProcess: async (processId: string) => {
+        const { success, message, processState } =
+          await killProcessAction(processId);
+
+        if (!success) {
+          throw new Error(message);
+        }
+
+        set((state) => {
+          state.processes[processId].processState = processState;
+        });
+      },
+
+      connectProcessStream: async (processId: string) => {
+        try {
+          const response = await fetch(`/api/connect/${processId}`);
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'Failed to connect to process');
           }
 
-          const chunk = decoder.decode(value, { stream: true });
-          // Update process state with the new data
+          if (!response.body) {
+            throw new Error('Response body is null');
+          }
+
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+
+          while (true) {
+            const { done, value } = await reader.read();
+
+            if (done) {
+              break;
+            }
+
+            const chunk = decoder.decode(value, { stream: true });
+            // Update process state with the new data
+            set((state) => {
+              if (state.processes[processId]) {
+                state.processes[processId].data += chunk;
+              }
+            });
+          }
+        } catch (error) {
+          throw new Error(
+            error instanceof Error
+              ? error.message
+              : 'An unknown error occurred',
+          );
+        } finally {
           set((state) => {
-            return {
-              processes: {
-                ...state.processes,
-                [processId]: {
-                  ...state.processes[processId],
-                  data: state.processes[processId].data + chunk,
-                },
-              },
-            };
+            // Check if process was removed prematurely
+            if (state.processes[processId]) {
+              state.processes[processId].processState = 'terminated';
+            }
           });
         }
-      } catch (error) {
-        throw new Error(
-          error instanceof Error ? error.message : 'An unknown error occurred',
-        );
-      } finally {
-        set((state) => {
-          // Check if process was removed prematurely
-          if (!state.processes[processId]) {
-            return state;
-          }
-
-          return {
-            processes: {
-              ...state.processes,
-              [processId]: {
-                ...state.processes[processId],
-                processState: 'terminated',
-              },
-            },
-          };
-        });
-      }
+      },
     },
-  },
-}));
+  })),
+);
 
-export const usePingProcesses = () => usePingStore((state) => state.processes);
+// Update the selector to use the dedicated array
+export const usePingProcessIds = () =>
+  usePingStore((state) => state.processIds);
 
-// Add this new selector for individual processes
 export const usePingProcess = (processId: string) =>
   usePingStore((state) => state.processes[processId]);
 

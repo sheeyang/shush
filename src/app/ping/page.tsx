@@ -5,11 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useState } from 'react';
-import { usePingActions, usePingProcesses } from '../../stores/pingStore';
+import { usePingActions, usePingProcessIds } from '../../stores/pingStore';
 
 export default function PingPage() {
   const [address, setAddress] = useState('localhost');
-  const processes = usePingProcesses();
+  const processIds = usePingProcessIds();
   const { addCommandProcess } = usePingActions();
 
   const handleSubmit = async () => {
@@ -34,8 +34,8 @@ export default function PingPage() {
           </Button>
         </CardContent>
       </Card>
-      {Object.entries(processes).map(([processId, { label }]) => (
-        <CommandCard key={processId} processId={processId} label={label} />
+      {processIds.map((processId) => (
+        <CommandCard key={processId} processId={processId} />
       ))}
     </div>
   );
