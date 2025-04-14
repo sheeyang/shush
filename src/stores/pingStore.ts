@@ -7,6 +7,7 @@ import {
   runProcessAction,
 } from '../app/actions';
 import { ProcessInfoClient } from '@/interfaces/process';
+import { useShallow } from 'zustand/shallow';
 
 type PingStoreActions = {
   addCommandProcess: (
@@ -22,14 +23,13 @@ type PingStoreActions = {
 
 type PingStore = {
   processes: { [key: string]: ProcessInfoClient };
-  processIds: string[]; // Keep a seperated array for IDs so we can use it to iterate over
-  actions: PingStoreActions;
+  actions: PingStoreActions; // Remove processIds from the store type
 };
 
 const usePingStore = create<PingStore>()(
   immer((set) => ({
     processes: {},
-    processIds: [], // Initialize the array
+    // Remove processIds initialization
 
     actions: {
       addCommandProcess: async (
@@ -46,7 +46,7 @@ const usePingStore = create<PingStore>()(
 
         set((state) => {
           state.processes[processId] = { label, processState, data: '' };
-          state.processIds = Object.keys(state.processes); // Update the IDs array
+          // Remove processIds update
         });
       },
 
@@ -59,7 +59,7 @@ const usePingStore = create<PingStore>()(
 
         set((state) => {
           delete state.processes[processId];
-          state.processIds = Object.keys(state.processes); // Update the IDs array
+          // Remove processIds update
         });
       },
 
@@ -139,9 +139,9 @@ const usePingStore = create<PingStore>()(
   })),
 );
 
-// Update the selector to use the dedicated array
+// Update the selector to derive IDs from processes
 export const usePingProcessIds = () =>
-  usePingStore((state) => state.processIds);
+  usePingStore(useShallow((state) => Object.keys(state.processes)));
 
 export const usePingProcess = (processId: string) =>
   usePingStore((state) => state.processes[processId]);
