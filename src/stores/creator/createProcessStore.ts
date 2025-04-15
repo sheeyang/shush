@@ -31,8 +31,8 @@ type ProcessStore = {
 const middlewares = <T>(f: StateCreator<T, [['zustand/immer', never]], []>) =>
   devtools(immer(f));
 
-export const createProcessStore = () =>
-  create<ProcessStore>()(
+export const createProcessStore = () => {
+  const useStore = create<ProcessStore>()(
     middlewares((set) => ({
       processes: {},
 
@@ -110,9 +110,7 @@ export const createProcessStore = () =>
 
             if (processState) {
               set((state) => {
-                if (state.processes[processId]) {
-                  state.processes[processId].processState = processState;
-                }
+                state.processes[processId].processState = processState;
               });
             }
 
@@ -133,9 +131,7 @@ export const createProcessStore = () =>
               const chunk = decoder.decode(value, { stream: true });
               // Update process state with the new data
               set((state) => {
-                if (state.processes[processId]) {
-                  state.processes[processId].output += chunk;
-                }
+                state.processes[processId].output += chunk;
               });
             }
           } catch (error) {
@@ -147,9 +143,7 @@ export const createProcessStore = () =>
           } finally {
             set((state) => {
               // Check if process was removed prematurely
-              if (state.processes[processId]) {
-                state.processes[processId].processState = 'terminated';
-              }
+              state.processes[processId].processState = 'terminated';
             });
           }
         },
@@ -157,11 +151,17 @@ export const createProcessStore = () =>
     })),
   );
 
-// // Update the selector to derive IDs from processes
-// export const usePingProcessIds = () =>
-//   usePingStore(useShallow((state) => Object.keys(state.processes)));
-
-// export const usePingProcess = (processId: string) =>
-//   usePingStore((state) => state.processes[processId]);
-
-// export const usePingActions = () => usePingStore((state) => state.actions);
+  // Create and return selectors along with the store
+  return {
+    useStore,
+    useProcessIds: () =>
+      useStore(useShallow((state) => Object.keys(state.processes))),
+    useProcessState: (processId: string) =>
+      useStore(useShallow((state) => state.processes[processId].processState)),
+    useProcessOutput: (processId: string) =>
+      useStore(useShallow((state) => state.processes[processId].output)),
+    useProcessLabel: (processId: string) =>
+      useStore(useShallow((state) => state.processes[processId].label)),
+    useActions: () => useStore(useShallow((state) => state.actions)),
+  };
+};
