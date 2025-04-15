@@ -90,9 +90,15 @@ export function runProcess(processId: string): {
   logStream.write(`Command: ${command} ${args.join(' ')}\n`);
   logStream.write(`Started at: ${new Date().toISOString()}\n\n`);
 
-  // Change this line to properly separate the /c parameter
-  processInfo.process = spawn('cmd.exe', ['/c', command, ...args]);
-  
+  processInfo.process = spawn(
+    command,
+    [
+      // Quote-wrap and escape each argument to prevent command injection
+      ...args.map((a) => `"${a.replace(/"/g, '""')}"`),
+    ],
+    { shell: true },
+  );
+
   const child = processInfo.process;
 
   processInfo.processState = 'running';
@@ -251,11 +257,13 @@ export function connectCommandStream(processId: string) {
       process.on('close', (code) => {
         controller.enqueue(`\nProcess exited with code ${code}`);
         controller.close();
+        // processInfo.processState = 'terminated';
       });
 
       process.on('error', (err) => {
         controller.enqueue(`\nProcess error: ${err.message}`);
         controller.close();
+        // processInfo.processState = 'terminated';
       });
     },
     cancel() {
