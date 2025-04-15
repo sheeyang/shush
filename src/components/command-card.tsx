@@ -11,7 +11,7 @@ export default function CommandCard({ processId }: { processId: string }) {
 
   // Use the specific process selector instead of all processes
   const process = usePingProcess(processId);
-  const { processState, data, label } = process;
+  const { processState, output, label } = process;
   const { runProcess, killProcess, connectProcessStream, removeProcess } =
     usePingActions();
 
@@ -49,7 +49,7 @@ export default function CommandCard({ processId }: { processId: string }) {
         </Button>
       </CardHeader>
       <CardContent>
-        <CommandOutput output={data} error={null} />
+        <CommandOutput output={output} error={null} />
       </CardContent>
       <CardFooter className='flex w-full flex-row gap-2'>
         <Label className='text-muted-foreground text-[10px]'>{processId}</Label>

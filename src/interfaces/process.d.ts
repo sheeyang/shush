@@ -16,6 +16,6 @@ type ProcessInfoClient = {
   label: string;
 
   processState: ProcessState;
-  data: string;
+  output: string;
   //   createdAt: number;
 };

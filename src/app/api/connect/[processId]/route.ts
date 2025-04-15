@@ -7,7 +7,7 @@ export async function GET(
 ) {
   const { processId } = await params;
 
-  const { success, message, stream } = connectCommandStream(processId);
+  const { success, message, stream, processState } = connectCommandStream(processId);
 
   if (!success) {
     return new Response(message, { status: 404 });
@@ -17,6 +17,7 @@ export async function GET(
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
       'Transfer-Encoding': 'chunked',
+      'X-Process-State': processState, // Add the process state to the headers
     },
   });
 }

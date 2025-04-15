@@ -9,7 +9,7 @@ import {
   runProcess,
 } from '@/helpers/createCommandStream';
 
-export async function createProcessAction(command: string, args: string[]) {
+export async function addProcessAction(command: string, args: string[]) {
   return addProcess(command, args);
 }
 

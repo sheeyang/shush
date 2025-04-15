@@ -7,30 +7,34 @@ import path from 'path';
 import { ProcessInfoServer, ProcessState } from '@/interfaces/process';
 
 // Create a singleton for managing active processes
-const getActiveProcessesMap = (): Map<string, ProcessInfoServer> => {
-  const ACTIVE_PROCESSES_KEY = Symbol.for('activeProcesses');
+const getChildProcessesMap = (): Map<string, ProcessInfoServer> => {
+  const CHILD_PROCESSES_KEY = Symbol.for('childProcesses');
 
   // Initialize the map if it doesn't exist in the global scope
-  if (!(ACTIVE_PROCESSES_KEY in global)) {
-    (
-      global as {
-        [key: symbol]: Map<string, ProcessInfoServer>;
-      }
-    )[ACTIVE_PROCESSES_KEY] = new Map<string, ProcessInfoServer>();
+  if (!(CHILD_PROCESSES_KEY in global)) {
+    (global as Record<symbol, Map<string, ProcessInfoServer>>)[
+      CHILD_PROCESSES_KEY
+    ] = new Map<string, ProcessInfoServer>();
   }
 
-  return (
-    global as {
-      [key: symbol]: Map<string, ProcessInfoServer>;
-    }
-  )[ACTIVE_PROCESSES_KEY];
+  return (global as Record<symbol, Map<string, ProcessInfoServer>>)[
+    CHILD_PROCESSES_KEY
+  ];
 };
 
 // Get the active processes map
-const activeProcesses = getActiveProcessesMap();
+const childProcesses = getChildProcessesMap();
 
 // Helper function to create a stream from a command
-export function addProcess(command: string, args: string[]) {
+export function addProcess(
+  command: string,
+  args: string[],
+): {
+  success: boolean;
+  message: string;
+  processId: string;
+  processState: ProcessState;
+} {
   // Generate a unique process ID
   const processId = crypto.randomUUID();
 
@@ -45,11 +49,11 @@ export function addProcess(command: string, args: string[]) {
   };
 
   // Store the process with its ID
-  activeProcesses.set(processId, processInfo);
+  childProcesses.set(processId, processInfo);
 
   console.log(`Process created with ID: ${processId}`);
   console.log(
-    `Active processes after creation: ${Array.from(activeProcesses.keys())}`,
+    `Active processes after creation: ${Array.from(childProcesses.keys())}`,
   );
 
   return {
@@ -65,7 +69,7 @@ export function runProcess(processId: string): {
   message: string;
   processState: ProcessState;
 } {
-  const processInfo = activeProcesses.get(processId);
+  const processInfo = childProcesses.get(processId);
   if (!processInfo) {
     return {
       success: false,
@@ -154,7 +158,7 @@ export function killProcess(processId: string): {
   message: string;
   processState: ProcessState;
 } {
-  const processInfo = activeProcesses.get(processId);
+  const processInfo = childProcesses.get(processId);
   if (!processInfo?.process) {
     return {
       success: false,
@@ -174,7 +178,7 @@ export function killProcess(processId: string): {
     } else {
       processInfo.process.kill();
     }
-    activeProcesses.delete(processId);
+    childProcesses.delete(processId);
     return {
       success: true,
       message: 'Process terminated',
@@ -190,8 +194,11 @@ export function killProcess(processId: string): {
   }
 }
 
-export function removeProcess(processId: string) {
-  const processInfo = activeProcesses.get(processId);
+export function removeProcess(processId: string): {
+  success: boolean;
+  message: string;
+} {
+  const processInfo = childProcesses.get(processId);
 
   if (!processInfo) {
     return {
@@ -202,17 +209,22 @@ export function removeProcess(processId: string) {
 
   killProcess(processId);
 
-  activeProcesses.delete(processId);
+  childProcesses.delete(processId);
   return {
     success: true,
     message: 'Process removed',
   };
 }
 
-export function connectCommandStream(processId: string) {
-  const processInfo = activeProcesses.get(processId);
+export function connectCommandStream(processId: string): {
+  success: boolean;
+  message: string;
+  stream: ReadableStream | null;
+  processState: ProcessState;
+} {
+  const processInfo = childProcesses.get(processId);
 
-  console.log('Active processes:', Array.from(activeProcesses.keys()));
+  console.log('Active processes:', Array.from(childProcesses.keys()));
   console.log('Requested process ID:', processId);
   console.log('Process info found:', !!processInfo);
 
@@ -252,13 +264,11 @@ export function connectCommandStream(processId: string) {
       processInfo.process.on('close', (code) => {
         controller.enqueue(`\nProcess exited with code ${code}`);
         controller.close();
-        // processInfo.processState = 'terminated';
       });
 
       processInfo.process.on('error', (err) => {
         controller.enqueue(`\nProcess error: ${err.message}`);
         controller.close();
-        // processInfo.processState = 'terminated';
       });
     },
     cancel() {

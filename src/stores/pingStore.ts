@@ -1,13 +1,15 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import {
-  createProcessAction,
+  addProcessAction,
   killProcessAction,
   removeProcessAction,
   runProcessAction,
-} from '../app/actions';
-import { ProcessInfoClient } from '@/interfaces/process';
+} from '../actions/processActions';
+import { ProcessInfoClient, ProcessState } from '@/interfaces/process';
 import { useShallow } from 'zustand/shallow';
+import { devtools } from 'zustand/middleware';
+import { StateCreator } from 'zustand';
 
 type PingStoreActions = {
   addCommandProcess: (
@@ -23,13 +25,15 @@ type PingStoreActions = {
 
 type PingStore = {
   processes: { [key: string]: ProcessInfoClient };
-  actions: PingStoreActions; // Remove processIds from the store type
+  actions: PingStoreActions;
 };
 
+const middlewares = <T>(f: StateCreator<T, [['zustand/immer', never]], []>) =>
+  devtools(immer(f));
+
 const usePingStore = create<PingStore>()(
-  immer((set) => ({
+  middlewares((set) => ({
     processes: {},
-    // Remove processIds initialization
 
     actions: {
       addCommandProcess: async (
@@ -38,14 +42,14 @@ const usePingStore = create<PingStore>()(
         label: string,
       ) => {
         const { success, message, processId, processState } =
-          await createProcessAction(command, args);
+          await addProcessAction(command, args);
 
         if (!success) {
           throw new Error(message);
         }
 
         set((state) => {
-          state.processes[processId] = { label, processState, data: '' };
+          state.processes[processId] = { label, processState, output: '' };
           // Remove processIds update
         });
       },
@@ -98,6 +102,19 @@ const usePingStore = create<PingStore>()(
             throw new Error(errorText || 'Failed to connect to process');
           }
 
+          // Extract the process state from the response headers
+          const processState = response.headers.get(
+            'X-Process-State',
+          ) as ProcessState;
+
+          if (processState) {
+            set((state) => {
+              if (state.processes[processId]) {
+                state.processes[processId].processState = processState;
+              }
+            });
+          }
+
           if (!response.body) {
             throw new Error('Response body is null');
           }
@@ -116,7 +133,7 @@ const usePingStore = create<PingStore>()(
             // Update process state with the new data
             set((state) => {
               if (state.processes[processId]) {
-                state.processes[processId].data += chunk;
+                state.processes[processId].output += chunk;
               }
             });
           }
