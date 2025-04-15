@@ -6,22 +6,28 @@ import fs from 'fs';
 import path from 'path';
 import { ProcessInfoServer, ProcessState } from '@/interfaces/process';
 
-// Store active processes with their IDs
-// Using a global variable with Symbol ensures it's a singleton
-const globalActiveProcesses = global as any;
-const ACTIVE_PROCESSES_KEY = Symbol.for('activeProcesses');
+// Create a singleton for managing active processes
+const getActiveProcessesMap = (): Map<string, ProcessInfoServer> => {
+  const ACTIVE_PROCESSES_KEY = Symbol.for('activeProcesses');
 
-// Initialize the map if it doesn't exist
-if (!globalActiveProcesses[ACTIVE_PROCESSES_KEY]) {
-  globalActiveProcesses[ACTIVE_PROCESSES_KEY] = new Map<
-    string,
-    ProcessInfoServer
-  >();
-}
+  // Initialize the map if it doesn't exist in the global scope
+  if (!(ACTIVE_PROCESSES_KEY in global)) {
+    (
+      global as {
+        [key: symbol]: Map<string, ProcessInfoServer>;
+      }
+    )[ACTIVE_PROCESSES_KEY] = new Map<string, ProcessInfoServer>();
+  }
+
+  return (
+    global as {
+      [key: symbol]: Map<string, ProcessInfoServer>;
+    }
+  )[ACTIVE_PROCESSES_KEY];
+};
 
 // Get the active processes map
-const activeProcesses: Map<string, ProcessInfoServer> =
-  globalActiveProcesses[ACTIVE_PROCESSES_KEY];
+const activeProcesses = getActiveProcessesMap();
 
 // Helper function to create a stream from a command
 export function addProcess(command: string, args: string[]) {
@@ -84,8 +90,9 @@ export function runProcess(processId: string): {
   logStream.write(`Command: ${command} ${args.join(' ')}\n`);
   logStream.write(`Started at: ${new Date().toISOString()}\n\n`);
 
-  processInfo.process = spawn(command, args, { shell: true });
-
+  // Change this line to properly separate the /c parameter
+  processInfo.process = spawn('cmd.exe', ['/c', command, ...args]);
+  
   const child = processInfo.process;
 
   processInfo.processState = 'running';
