@@ -1,9 +1,9 @@
-import type { ChildProcessWithoutNullStreams } from 'child_process';
+import type { ChildProcess } from 'child_process';
 
 export type ProcessState = 'initialized' | 'running' | 'terminated';
 
 type ProcessInfoServer = {
-  process: ChildProcessWithoutNullStreams | null;
+  process: ChildProcess | null;
   output: string;
 
   command: string;

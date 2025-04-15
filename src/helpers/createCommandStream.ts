@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { spawn } from 'child_process';
+import spawn from 'cross-spawn';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
@@ -90,20 +90,11 @@ export function runProcess(processId: string): {
   logStream.write(`Command: ${command} ${args.join(' ')}\n`);
   logStream.write(`Started at: ${new Date().toISOString()}\n\n`);
 
-  processInfo.process = spawn(
-    command,
-    [
-      // Quote-wrap and escape each argument to prevent command injection
-      ...args.map((a) => `"${a.replace(/"/g, '""')}"`),
-    ],
-    { shell: true },
-  );
-
-  const child = processInfo.process;
+  processInfo.process = spawn(command, args);
 
   processInfo.processState = 'running';
 
-  child.stdout.on('data', (data) => {
+  processInfo.process.stdout?.on('data', (data) => {
     const output = data.toString();
 
     // Log to server
@@ -113,7 +104,7 @@ export function runProcess(processId: string): {
     processInfo.output += output;
   });
 
-  child.stderr.on('data', (data) => {
+  processInfo.process.stderr?.on('data', (data) => {
     const errorOutput = `Error: ${data.toString()}`;
 
     // Log to server
@@ -123,7 +114,7 @@ export function runProcess(processId: string): {
     processInfo.output += errorOutput;
   });
 
-  child.on('close', (code) => {
+  processInfo.process.on('close', (code) => {
     const closeMessage = `\nProcess exited with code ${code}`;
 
     // Log to server
@@ -132,9 +123,11 @@ export function runProcess(processId: string): {
 
     // Save to output history
     processInfo.output += closeMessage;
+
+    processInfo.processState = 'terminated';
   });
 
-  child.on('error', (err) => {
+  processInfo.process.on('error', (err) => {
     const errorMessage = `\nProcess error: ${err.message}`;
 
     // Log to server
@@ -143,6 +136,8 @@ export function runProcess(processId: string): {
 
     // Save to output history
     processInfo.output += errorMessage;
+
+    processInfo.processState = 'terminated';
   });
 
   return {
@@ -152,6 +147,7 @@ export function runProcess(processId: string): {
   };
 }
 
+// TODO: check if cross spawn kills the process without taskkill workaround
 // Function to kill a process by its ID
 export function killProcess(processId: string): {
   success: boolean;
@@ -159,38 +155,39 @@ export function killProcess(processId: string): {
   processState: ProcessState;
 } {
   const processInfo = activeProcesses.get(processId);
-  if (processInfo?.process) {
-    try {
-      if (processInfo.process.pid) {
-        spawn('taskkill', [
-          '/pid',
-          processInfo.process.pid.toString(),
-          '/f',
-          '/t',
-        ]);
-      } else {
-        processInfo.process.kill();
-      }
-      activeProcesses.delete(processId);
-      return {
-        success: true,
-        message: 'Process terminated',
-        processState: processInfo.processState,
-      };
-    } catch (error) {
-      console.error('Error killing process:', error);
-      return {
-        success: false,
-        message: 'Error killing process',
-        processState: processInfo.processState,
-      };
-    }
+  if (!processInfo?.process) {
+    return {
+      success: false,
+      message: 'Process not found',
+      processState: 'terminated',
+    };
   }
-  return {
-    success: false,
-    message: 'Process not found',
-    processState: 'terminated',
-  };
+
+  try {
+    if (processInfo.process.pid) {
+      spawn('taskkill', [
+        '/pid',
+        processInfo.process.pid.toString(),
+        '/f',
+        '/t',
+      ]);
+    } else {
+      processInfo.process.kill();
+    }
+    activeProcesses.delete(processId);
+    return {
+      success: true,
+      message: 'Process terminated',
+      processState: processInfo.processState,
+    };
+  } catch (error) {
+    console.error('Error killing process:', error);
+    return {
+      success: false,
+      message: 'Error killing process',
+      processState: processInfo.processState,
+    };
+  }
 }
 
 export function removeProcess(processId: string) {
@@ -230,9 +227,7 @@ export function connectCommandStream(processId: string) {
 
   const stream = new ReadableStream({
     start(controller) {
-      const { process } = processInfo;
-
-      if (!process) {
+      if (!processInfo.process) {
         return {
           success: false,
           message: `Process ${processId} not found`,
@@ -246,21 +241,21 @@ export function connectCommandStream(processId: string) {
         controller.enqueue(processInfo.output);
       }
 
-      process.stdout.on('data', (data) => {
+      processInfo.process.stdout?.on('data', (data) => {
         controller.enqueue(data.toString());
       });
 
-      process.stderr.on('data', (data) => {
+      processInfo.process.stderr?.on('data', (data) => {
         controller.enqueue(`Error: ${data.toString()}`);
       });
 
-      process.on('close', (code) => {
+      processInfo.process.on('close', (code) => {
         controller.enqueue(`\nProcess exited with code ${code}`);
         controller.close();
         // processInfo.processState = 'terminated';
       });
 
-      process.on('error', (err) => {
+      processInfo.process.on('error', (err) => {
         controller.enqueue(`\nProcess error: ${err.message}`);
         controller.close();
         // processInfo.processState = 'terminated';
