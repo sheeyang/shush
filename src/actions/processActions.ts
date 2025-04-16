@@ -4,13 +4,18 @@ import 'server-only';
 
 import {
   addProcess,
+  getAllProcesses,
   killProcess,
   removeProcess,
   runProcess,
 } from '@/helpers/createCommandStream';
 
-export async function addProcessAction(command: string, args: string[]) {
-  return addProcess(command, args);
+export async function addProcessAction(
+  command: string,
+  args: string[],
+  label: string,
+) {
+  return addProcess(command, args, label);
 }
 
 export async function runProcessAction(processId: string) {
@@ -23,4 +28,8 @@ export async function killProcessAction(processId: string) {
 
 export async function removeProcessAction(processId: string) {
   return removeProcess(processId);
+}
+
+export async function getAllProcessesAction() {
+  return getAllProcesses();
 }

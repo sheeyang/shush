@@ -4,6 +4,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import {
   addProcessAction,
+  getAllProcessesAction,
   killProcessAction,
   removeProcessAction,
   runProcessAction,
@@ -14,6 +15,7 @@ import { devtools } from 'zustand/middleware';
 import { StateCreator } from 'zustand';
 
 type ProcessStoreActions = {
+  initializeStore: () => Promise<void>;
   addCommandProcess: (
     command: string,
     args: string[],
@@ -26,7 +28,7 @@ type ProcessStoreActions = {
 };
 
 type ProcessStore = {
-  processes: { [key: string]: ProcessInfoClient };
+  processes: Record<string, ProcessInfoClient>;
   actions: ProcessStoreActions;
 };
 
@@ -39,13 +41,20 @@ export const createProcessStore = () => {
       processes: {},
 
       actions: {
+        initializeStore: async () => {
+          const processes = await getAllProcessesAction();
+          set((state) => {
+            state.processes = processes;
+          });
+        },
+
         addCommandProcess: async (
           command: string,
           args: string[],
           label: string,
         ) => {
           const { success, message, processId, processState } =
-            await addProcessAction(command, args);
+            await addProcessAction(command, args, label); // Update to pass label
 
           if (!success) {
             throw new Error(message);
@@ -53,7 +62,6 @@ export const createProcessStore = () => {
 
           set((state) => {
             state.processes[processId] = { label, processState, output: '' };
-            // Remove processIds update
           });
         },
 
@@ -133,7 +141,9 @@ export const createProcessStore = () => {
               const chunk = decoder.decode(value, { stream: true });
               // Update process state with the new data
               set((state) => {
-                state.processes[processId].output += chunk;
+                if (state.processes[processId]) {
+                  state.processes[processId].output += chunk;
+                }
               });
             }
           } catch (error) {
@@ -142,11 +152,6 @@ export const createProcessStore = () => {
                 ? error.message
                 : 'An unknown error occurred',
             );
-          } finally {
-            set((state) => {
-              // Check if process was removed prematurely
-              state.processes[processId].processState = 'terminated';
-            });
           }
         },
       },
@@ -159,11 +164,11 @@ export const createProcessStore = () => {
     useProcessIds: () =>
       useStore(useShallow((state) => Object.keys(state.processes))),
     useProcessState: (processId: string) =>
-      useStore(useShallow((state) => state.processes[processId].processState)),
+      useStore((state) => state.processes[processId].processState),
     useProcessOutput: (processId: string) =>
-      useStore(useShallow((state) => state.processes[processId].output)),
+      useStore((state) => state.processes[processId].output),
     useProcessLabel: (processId: string) =>
-      useStore(useShallow((state) => state.processes[processId].label)),
-    useActions: () => useStore(useShallow((state) => state.actions)),
+      useStore((state) => state.processes[processId].label),
+    useActions: () => useStore((state) => state.actions),
   };
 };

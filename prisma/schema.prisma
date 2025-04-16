@@ -1,0 +1,28 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum ProcessState {
+  initialized
+  running
+  terminated
+}
+
+model ProcessInfoDataBase {
+  id           String       @id @default(uuid())
+  label        String
+  processState ProcessState
+  output       String
+  command      String
+  args         String
+  createdAt    DateTime     @default(now())
+}

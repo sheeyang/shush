@@ -4,7 +4,12 @@ import spawn from 'cross-spawn';
 import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
-import { ProcessInfoServer, ProcessState } from '@/interfaces/process';
+import {
+  ProcessInfoClient,
+  ProcessInfoServer,
+  ProcessState,
+} from '@/interfaces/process';
+import prisma from '@/lib/db';
 
 // Create a singleton for managing active processes
 const getChildProcessesMap = (): Map<string, ProcessInfoServer> => {
@@ -25,36 +30,81 @@ const getChildProcessesMap = (): Map<string, ProcessInfoServer> => {
 // Get the active processes map
 const childProcesses = getChildProcessesMap();
 
+export async function getAllProcesses(): Promise<
+  Record<string, ProcessInfoClient>
+> {
+  const databaseProcesses = await prisma.processInfoDataBase.findMany();
+  databaseProcesses.forEach((processInfo) => {
+    childProcesses.set(processInfo.id, {
+      process: null,
+      command: processInfo.command,
+      args: JSON.parse(processInfo.args), // Convert string back to array
+      output: processInfo.output,
+      createdAt: processInfo.createdAt,
+      processState: processInfo.processState,
+    });
+  });
+
+  // TODO: clean this up
+  const clientProcesses = Object.fromEntries(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    databaseProcesses.entries().map(([_index, processInfo]) => {
+      return [
+        processInfo.id,
+        {
+          label: processInfo.label,
+          output: processInfo.output,
+          processState: processInfo.processState,
+        },
+      ];
+    }),
+  );
+
+  return clientProcesses;
+}
+
 // Helper function to create a stream from a command
-export function addProcess(
+export async function addProcess(
   command: string,
   args: string[],
-): {
+  label: string, // Add label parameter
+): Promise<{
   success: boolean;
   message: string;
   processId: string;
   processState: ProcessState;
-} {
-  // Generate a unique process ID
+}> {
   const processId = crypto.randomUUID();
 
-  // Create process info before storing
   const processInfo: ProcessInfoServer = {
     process: null,
     command,
     args,
     output: '',
-    createdAt: Date.now(),
+    createdAt: new Date(Date.now()),
     processState: 'initialized',
   };
 
-  // Store the process with its ID
+  // Store in memory
   childProcesses.set(processId, processInfo);
 
   console.log(`Process created with ID: ${processId}`);
   console.log(
     `Active processes after creation: ${Array.from(childProcesses.keys())}`,
   );
+
+  // Store in database
+  await prisma.processInfoDataBase.create({
+    data: {
+      id: processId,
+      label,
+      processState: processInfo.processState,
+      output: processInfo.output,
+      command: processInfo.command,
+      args: JSON.stringify(processInfo.args),
+      createdAt: processInfo.createdAt,
+    },
+  });
 
   return {
     success: true,
@@ -64,11 +114,9 @@ export function addProcess(
   };
 }
 
-export function runProcess(processId: string): {
-  success: boolean;
-  message: string;
-  processState: ProcessState;
-} {
+export async function runProcess(
+  processId: string,
+): Promise<{ success: boolean; message: string; processState: ProcessState }> {
   const processInfo = childProcesses.get(processId);
   if (!processInfo) {
     return {
@@ -98,27 +146,26 @@ export function runProcess(processId: string): {
 
   processInfo.processState = 'running';
 
-  processInfo.process.stdout?.on('data', (data) => {
+  await prisma.processInfoDataBase.update({
+    where: { id: processId },
+    data: { processState: processInfo.processState },
+  });
+
+  processInfo.process.stdout?.on('data', async (data) => {
     const output = data.toString();
-
-    // Log to server
     logStream.write(output);
-
-    // Save to output history
     processInfo.output += output;
+
+    await prisma.processInfoDataBase.update({
+      where: { id: processId },
+      data: {
+        processState: processInfo.processState,
+        output: processInfo.output,
+      },
+    });
   });
 
-  processInfo.process.stderr?.on('data', (data) => {
-    const errorOutput = `Error: ${data.toString()}`;
-
-    // Log to server
-    logStream.write(errorOutput);
-
-    // Save to output history
-    processInfo.output += errorOutput;
-  });
-
-  processInfo.process.on('close', (code) => {
+  processInfo.process.on('close', async (code) => {
     const closeMessage = `\nProcess exited with code ${code}`;
 
     // Log to server
@@ -129,9 +176,36 @@ export function runProcess(processId: string): {
     processInfo.output += closeMessage;
 
     processInfo.processState = 'terminated';
+
+    await prisma.processInfoDataBase.update({
+      where: { id: processId },
+      data: {
+        processState: processInfo.processState,
+        output: processInfo.output,
+      },
+    });
   });
 
-  processInfo.process.on('error', (err) => {
+  // Similar updates for stderr and error handlers
+  processInfo.process.stderr?.on('data', async (data) => {
+    const errorOutput = `Error: ${data.toString()}`;
+
+    // Log to server
+    logStream.write(errorOutput);
+
+    // Save to output history
+    processInfo.output += errorOutput;
+
+    await prisma.processInfoDataBase.update({
+      where: { id: processId },
+      data: {
+        processState: processInfo.processState,
+        output: processInfo.output,
+      },
+    });
+  });
+
+  processInfo.process.on('error', async (err) => {
     const errorMessage = `\nProcess error: ${err.message}`;
 
     // Log to server
@@ -142,6 +216,14 @@ export function runProcess(processId: string): {
     processInfo.output += errorMessage;
 
     processInfo.processState = 'terminated';
+
+    await prisma.processInfoDataBase.update({
+      where: { id: processId },
+      data: {
+        processState: processInfo.processState,
+        output: processInfo.output,
+      },
+    });
   });
 
   return {
@@ -153,11 +235,9 @@ export function runProcess(processId: string): {
 
 // TODO: check if cross spawn kills the process without taskkill workaround
 // Function to kill a process by its ID
-export function killProcess(processId: string): {
-  success: boolean;
-  message: string;
-  processState: ProcessState;
-} {
+export async function killProcess(
+  processId: string,
+): Promise<{ success: boolean; message: string; processState: ProcessState }> {
   const processInfo = childProcesses.get(processId);
   if (!processInfo?.process) {
     return {
@@ -178,7 +258,13 @@ export function killProcess(processId: string): {
     } else {
       processInfo.process.kill();
     }
-    childProcesses.delete(processId);
+
+    // Update database
+    await prisma.processInfoDataBase.update({
+      where: { id: processId },
+      data: { processState: processInfo.processState },
+    });
+
     return {
       success: true,
       message: 'Process terminated',
@@ -186,6 +272,12 @@ export function killProcess(processId: string): {
     };
   } catch (error) {
     console.error('Error killing process:', error);
+
+    await prisma.processInfoDataBase.update({
+      where: { id: processId },
+      data: { processState: processInfo.processState },
+    });
+
     return {
       success: false,
       message: 'Error killing process',
@@ -194,10 +286,10 @@ export function killProcess(processId: string): {
   }
 }
 
-export function removeProcess(processId: string): {
+export async function removeProcess(processId: string): Promise<{
   success: boolean;
   message: string;
-} {
+}> {
   const processInfo = childProcesses.get(processId);
 
   if (!processInfo) {
@@ -210,6 +302,11 @@ export function removeProcess(processId: string): {
   killProcess(processId);
 
   childProcesses.delete(processId);
+
+  await prisma.processInfoDataBase.delete({
+    where: { id: processId },
+  }); // Delete from database
+
   return {
     success: true,
     message: 'Process removed',

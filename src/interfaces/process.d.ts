@@ -8,7 +8,7 @@ type ProcessInfoServer = {
 
   command: string;
   args: string[];
-  createdAt: number;
+  createdAt: Date;
   processState: ProcessState;
 };
 
@@ -17,5 +17,4 @@ type ProcessInfoClient = {
 
   processState: ProcessState;
   output: string;
-  //   createdAt: number;
 };
