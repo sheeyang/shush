@@ -1,3 +1,5 @@
+'use client';
+
 import { createProcessStore } from './creator/createProcessStore';
 
 const {

@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { AppSidebar } from '@/components/shush-sidebar';
 import { cookies } from 'next/headers';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { ThemeProvider } from '@/components/theme-provider';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -30,19 +31,26 @@ export default async function RootLayout({
   const defaultOpen = cookieStore.get('sidebar_state')?.value === 'true';
 
   return (
-    <html lang='en'>
+    <html lang='en' suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <SidebarProvider defaultOpen={defaultOpen}>
-          <AppSidebar />
-          <div className='relative flex h-screen w-screen'>
-            <ScrollArea className='h-full w-full'>
-              <SidebarTrigger className='absolute top-2 left-2 z-10 size-10' />
-              <div className='min-h-screen pb-96'>{children}</div>
-            </ScrollArea>
-          </div>
-        </SidebarProvider>
+        <ThemeProvider
+          attribute='class'
+          defaultTheme='system'
+          enableSystem
+          disableTransitionOnChange
+        >
+          <SidebarProvider defaultOpen={defaultOpen}>
+            <AppSidebar />
+            <div className='relative flex h-screen w-screen'>
+              <ScrollArea className='h-full w-full'>
+                <SidebarTrigger className='absolute top-2 left-2 z-10 size-10' />
+                <div className='min-h-screen pb-96'>{children}</div>
+              </ScrollArea>
+            </div>
+          </SidebarProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
