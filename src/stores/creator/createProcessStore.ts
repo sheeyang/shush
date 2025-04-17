@@ -37,7 +37,8 @@ const middlewares = <T>(f: StateCreator<T, [['zustand/immer', never]], []>) =>
 
 export const createProcessStore = () => {
   const useStore = create<ProcessStore>()(
-    middlewares((set) => ({
+    middlewares((set, get) => ({
+      // Add get to access state within actions
       processes: {},
 
       actions: {
@@ -61,7 +62,13 @@ export const createProcessStore = () => {
           }
 
           set((state) => {
-            state.processes[processId] = { label, processState, output: '' };
+            // Initialize the new flag
+            state.processes[processId] = {
+              label,
+              processState,
+              output: '',
+              isConnectingStream: false,
+            };
           });
         },
 
@@ -105,22 +112,43 @@ export const createProcessStore = () => {
         },
 
         connectProcessStream: async (processId: string) => {
+          // Access current state using get()
+          const currentProcess = get().processes[processId];
+
+          // Check if process exists and if already connecting
+          if (!currentProcess || currentProcess.isConnectingStream) {
+            console.log(
+              `Stream connection for ${processId} already in progress or process removed.`,
+            );
+            return; // Prevent concurrent connection attempts
+          }
+
+          // Set flag to indicate connection attempt is starting
+          set((state) => {
+            if (state.processes[processId]) {
+              state.processes[processId].isConnectingStream = true;
+              // Reset output only when starting a new connection attempt
+              state.processes[processId].output = '';
+            }
+          });
+
           try {
             const response = await fetch(`/api/connect/${processId}`);
 
             if (!response.ok) {
-              const errorText = await response.text();
-              throw new Error(errorText || 'Failed to connect to process');
+              throw new Error(`Failed to connect to process ${processId}`);
             }
 
-            // Extract the process state from the response headers
-            const processState = response.headers.get(
+            const processStateHeader = response.headers.get(
               'X-Process-State',
             ) as ProcessState;
 
-            if (processState) {
+            if (processStateHeader) {
               set((state) => {
-                state.processes[processId].processState = processState;
+                // Check process still exists before updating state
+                if (state.processes[processId]) {
+                  state.processes[processId].processState = processStateHeader;
+                }
               });
             }
 
@@ -131,43 +159,56 @@ export const createProcessStore = () => {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
 
-            // Make sure it is empty to prevent duplicate output
-            set((state) => {
-              if (state.processes[processId]) {
-                state.processes[processId].output = '';
-              }
-            });
-
             while (true) {
               const { done, value } = await reader.read();
 
               if (done) {
-                break;
+                // Stream finished successfully
+                set((state) => {
+                  if (state.processes[processId]) {
+                    // Only set to terminated if it was previously running
+                    if (state.processes[processId].processState === 'running') {
+                      state.processes[processId].processState = 'terminated';
+                    }
+                  }
+                });
+                console.log(`Stream finished for ${processId}`);
+                break; // Exit the loop
               }
 
               const chunk = decoder.decode(value, { stream: true });
-              // Update process state with the new data
               set((state) => {
                 if (state.processes[processId]) {
                   state.processes[processId].output += chunk;
+                } else {
+                  // Process might have been removed while streaming
+                  console.warn(
+                    `Process ${processId} removed while streaming output.`,
+                  );
+                  reader.cancel('Process removed'); // Attempt to cancel the reader
+                  return; // Exit update logic
                 }
               });
             }
           } catch (error) {
+            console.error(`Error connecting stream for ${processId}:`, error);
+            set((state) => {
+              if (state.processes[processId]) {
+                // Set state to terminated or a specific error state on failure
+                state.processes[processId].processState = 'error'; // Or 'error' if you add that state
+              }
+            });
+            // Re-throw the error if needed for upstream handling
             throw new Error(
               error instanceof Error
                 ? error.message
-                : 'An unknown error occurred',
+                : 'An unknown error occurred during stream connection',
             );
           } finally {
+            // Always unset the flag when the attempt finishes (success, error, or cancellation)
             set((state) => {
-              // Only set to terminated if the process was actually running or is still marked as running
-              // and the stream connection attempt finished.
-              if (
-                state.processes[processId] &&
-                state.processes[processId].processState === 'running'
-              ) {
-                state.processes[processId].processState = 'terminated';
+              if (state.processes[processId]) {
+                state.processes[processId].isConnectingStream = false;
               }
             });
           }

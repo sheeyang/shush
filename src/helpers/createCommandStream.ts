@@ -92,6 +92,7 @@ export async function getAllProcesses(): Promise<
         label: processData.label,
         output: '',
         processState: processData.processState,
+        isConnectingStream: false,
       };
       return acc;
     },

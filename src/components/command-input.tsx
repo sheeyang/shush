@@ -12,7 +12,7 @@ export default function CommandInput() {
 
   const handleSubmit = async () => {
     try {
-      await addCommandProcess('ping', [address], address);
+      await addCommandProcess('ping -n 10', [address], address);
     } catch (error) {
       console.error('Failed to add process:', error);
     }

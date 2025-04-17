@@ -8,7 +8,7 @@ type ProcessInfoServer = {
 
 type ProcessInfoClient = {
   label: string;
-
   processState: ProcessState;
   output: string;
+  isConnectingStream: boolean;
 };
