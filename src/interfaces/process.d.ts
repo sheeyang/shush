@@ -4,11 +4,11 @@ export type ProcessState = 'initialized' | 'running' | 'terminated';
 
 type ProcessInfoServer = {
   process: ChildProcess | null;
-  output: string;
+  // output: string;
 
-  command: string;
-  args: string[];
-  createdAt: Date;
+  // command: string;
+  // args: string[];
+  // createdAt: Date;
   processState: ProcessState;
 };
 

@@ -152,6 +152,12 @@ export const createProcessStore = () => {
                 ? error.message
                 : 'An unknown error occurred',
             );
+          } finally {
+            set((state) => {
+              if (state.processes[processId]) {
+                state.processes[processId].processState = 'terminated';
+              }
+            });
           }
         },
       },
