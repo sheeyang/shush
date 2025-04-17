@@ -2,14 +2,14 @@ import 'server-only';
 
 import spawn from 'cross-spawn';
 import crypto from 'crypto';
-import fs from 'fs';
-import path from 'path';
+
 import {
   ProcessInfoClient,
   ProcessInfoServer,
   ProcessState,
 } from '@/interfaces/process';
 import prisma from '@/lib/db';
+import { ProcessOutput } from '@/generated/prisma';
 
 // Create a singleton for managing active processes
 const getChildProcessesMap = (): Map<string, ProcessInfoServer> => {
@@ -40,23 +40,16 @@ async function updateDatabase(
 ) {
   try {
     if (appendOutput !== null) {
-      await prisma.processInfoDataBase.update({
-        where: { id: processId },
+      await prisma.processOutput.create({
         data: {
-          output: {
-            set:
-              (
-                await prisma.processInfoDataBase.findUnique({
-                  where: { id: processId },
-                })
-              )?.output + appendOutput,
-          },
+          data: appendOutput,
+          processInfoId: processId,
         },
       });
     }
 
     if (state !== null) {
-      await prisma.processInfoDataBase.update({
+      await prisma.processData.update({
         where: { id: processId },
         data: {
           processState: state,
@@ -64,38 +57,45 @@ async function updateDatabase(
       });
     }
 
-    return false;
+    return true;
   } catch (error) {
     console.error(`Error updating database for process ${processId}:`, error);
     return false;
   }
 }
 
+function combineProcessOutput(outputRecords: ProcessOutput[]): string {
+  return outputRecords.map((outputRecord) => outputRecord.data).join('');
+}
+
 export async function getAllProcesses(): Promise<
   Record<string, ProcessInfoClient>
 > {
-  const databaseProcesses = await prisma.processInfoDataBase.findMany();
-
-  childProcesses.clear();
-
-  databaseProcesses.forEach((processInfo) => {
-    childProcesses.set(processInfo.id, {
-      process: null,
-      processState: processInfo.processState,
-    });
+  const databaseProcesses = await prisma.processData.findMany({
+    select: {
+      id: true,
+      label: true,
+      processState: true,
+      output: {
+        orderBy: {
+          createdAt: 'asc', // make sure the output is in the correct order
+        },
+      },
+    },
   });
 
-  const clientProcesses = Object.fromEntries(
-    databaseProcesses.map((processInfo) => {
-      return [
-        processInfo.id,
-        {
-          label: processInfo.label,
-          output: processInfo.output,
-          processState: processInfo.processState,
-        },
-      ];
-    }),
+  const clientProcesses = databaseProcesses.reduce(
+    (acc, processData) => {
+      // const combinedOutput = combineProcessOutput(processData.output);
+
+      acc[processData.id] = {
+        label: processData.label,
+        output: '',
+        processState: processData.processState,
+      };
+      return acc;
+    },
+    {} as Record<string, ProcessInfoClient>,
   );
 
   return clientProcesses;
@@ -105,7 +105,7 @@ export async function getAllProcesses(): Promise<
 export async function addProcess(
   command: string,
   args: string[],
-  label: string, // Add label parameter
+  label: string,
 ): Promise<{
   success: boolean;
   message: string;
@@ -114,29 +114,14 @@ export async function addProcess(
 }> {
   const processId = crypto.randomUUID();
 
-  const processInfo: ProcessInfoServer = {
-    process: null,
-    processState: 'initialized',
-  };
-
-  // Store in memory
-  childProcesses.set(processId, processInfo);
-
-  console.log(`Process created with ID: ${processId}`);
-  console.log(
-    `Active processes after creation: ${Array.from(childProcesses.keys())}`,
-  );
-
   // Store in database
-  await prisma.processInfoDataBase.create({
+  await prisma.processData.create({
     data: {
       id: processId,
       label,
-      processState: processInfo.processState,
-      output: '',
+      processState: 'initialized',
       command: command,
       args: JSON.stringify(args),
-      createdAt: new Date(Date.now()),
     },
   });
 
@@ -144,27 +129,19 @@ export async function addProcess(
     success: true,
     message: 'Successfully added process',
     processId,
-    processState: processInfo.processState,
+    processState: 'initialized',
   };
 }
 
 export async function runProcess(
   processId: string,
 ): Promise<{ success: boolean; message: string; processState: ProcessState }> {
-  const processInfo = childProcesses.get(processId);
-  if (!processInfo) {
-    return {
-      success: false,
-      message: 'Process not found',
-      processState: 'terminated',
-    };
-  }
-
-  const processData = await prisma.processInfoDataBase.findUnique({
+  const processData = await prisma.processData.findUnique({
     where: { id: processId },
     select: {
       command: true,
       args: true,
+      processState: true,
     },
   });
 
@@ -172,33 +149,32 @@ export async function runProcess(
     return {
       success: false,
       message: 'Process data not found in database',
-      processState: 'terminated',
+      processState: 'error',
     };
   }
 
   const command = processData.command;
   const args = JSON.parse(processData.args);
 
-  // Create logs directory if it doesn't exist
-  const logsDir = 'logs';
-  if (!fs.existsSync(logsDir)) {
-    fs.mkdirSync(logsDir, { recursive: true });
+  const processInfo = childProcesses
+    .set(processId, {
+      process: spawn(command, args),
+      processState: 'running',
+    })
+    .get(processId);
+
+  if (processInfo?.processState !== 'running') {
+    return {
+      success: false,
+      message: `Failed to run process ${processId}`,
+      processState: 'error',
+    };
   }
 
-  // Create a log file for this process
-  const logFile = path.join(logsDir, `${command}-${processId}.log`);
-  const logStream = fs.createWriteStream(logFile, { flags: 'a' });
-
-  processInfo.process = spawn(command, args);
-
-  const startMessage = `Command: ${command} ${args.join(' ')}\nStarted at: ${new Date().toISOString()}\n\n`;
-
   await updateDatabase(processId, {
-    appendOutput: startMessage,
+    appendOutput: `Command: ${command} ${args.join(' ')}\nStarted at: ${new Date().toISOString()}\n`,
     state: 'running',
   });
-  processInfo.processState = 'running'; // Update process state in memory
-  logStream.write(startMessage);
 
   processInfo.process.stdout?.on('data', async (data) => {
     const output = data.toString();
@@ -209,7 +185,6 @@ export async function runProcess(
 
   processInfo.process.stderr?.on('data', async (data) => {
     const errorOutput = `Error: ${data.toString()}`;
-    logStream.write(errorOutput);
     await updateDatabase(processId, {
       appendOutput: errorOutput,
     });
@@ -218,32 +193,29 @@ export async function runProcess(
   processInfo.process.on('close', async (code) => {
     const closeMessage = `\nProcess exited with code ${code}\nEnded at: ${new Date().toISOString()}\n`;
 
-    logStream.write(closeMessage);
-    logStream.end();
-
     await updateDatabase(processId, {
       appendOutput: closeMessage,
       state: 'terminated',
     });
+
+    childProcesses.delete(processId);
   });
 
   processInfo.process.on('error', async (err) => {
     const errorMessage = `\nProcess error: ${err.message}`;
 
-    // Log to server
-    logStream.write(`${errorMessage}\nEnded at: ${new Date().toISOString()}\n`);
-    logStream.end();
-
     await updateDatabase(processId, {
       appendOutput: errorMessage,
       state: 'terminated',
     });
+
+    childProcesses.delete(processId);
   });
 
   return {
     success: true,
     message: 'Successfully ran process',
-    processState: processInfo.processState,
+    processState: 'running',
   };
 }
 
@@ -253,15 +225,25 @@ export async function killProcess(
   processId: string,
 ): Promise<{ success: boolean; message: string; processState: ProcessState }> {
   const processInfo = childProcesses.get(processId);
-  if (!processInfo?.process) {
+
+  if (!processInfo) {
     return {
       success: false,
       message: 'Process not found',
-      processState: 'terminated',
+      processState: 'error',
+    };
+  }
+
+  if (processInfo.processState !== 'running') {
+    return {
+      success: false,
+      message: `Process ${processId} is not running`,
+      processState: 'error',
     };
   }
 
   try {
+    // Kill the process using appropriate method
     if (processInfo.process.pid) {
       spawn('taskkill', [
         '/pid',
@@ -272,18 +254,28 @@ export async function killProcess(
     } else {
       processInfo.process.kill();
     }
+
+    processInfo.process.stdout?.removeAllListeners('data');
+    processInfo.process.stderr?.removeAllListeners('data');
+    processInfo.process.removeAllListeners('close');
+    processInfo.process.removeAllListeners('error');
   } catch (error) {
     console.error('Error killing process:', error);
-  } finally {
-    await updateDatabase(processId, {
-      state: 'terminated',
-    });
+
+    return {
+      success: false,
+      message: `Error killing process: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      processState: 'error',
+    };
   }
 
+  childProcesses.delete(processId);
+  await updateDatabase(processId, { state: 'terminated' });
+
   return {
-    success: false,
-    message: 'Error killing process',
-    processState: processInfo.processState,
+    success: true,
+    message: 'Successfully killed process',
+    processState: 'terminated',
   };
 }
 
@@ -291,20 +283,15 @@ export async function removeProcess(processId: string): Promise<{
   success: boolean;
   message: string;
 }> {
-  const processInfo = childProcesses.get(processId);
-
-  if (!processInfo) {
-    return {
-      success: false,
-      message: 'Process not found',
-    };
-  }
-
   await killProcess(processId);
 
-  childProcesses.delete(processId);
+  // Delete associated output records
+  await prisma.processOutput.deleteMany({
+    where: { processInfoId: processId },
+  });
 
-  await prisma.processInfoDataBase.delete({
+  // Delete the process data record
+  await prisma.processData.delete({
     where: { id: processId },
   });
 
@@ -314,47 +301,44 @@ export async function removeProcess(processId: string): Promise<{
   };
 }
 
-export function connectCommandStream(processId: string): {
+export async function connectCommandStream(processId: string): Promise<{
   success: boolean;
   message: string;
   stream: ReadableStream | null;
   processState: ProcessState;
-} {
-  const processInfo = childProcesses.get(processId);
+}> {
+  const processData = await prisma.processData.findUnique({
+    where: { id: processId },
+    select: {
+      processState: true,
+      output: {
+        orderBy: {
+          createdAt: 'asc', // Ensure output is in the correct order
+        },
+      },
+    },
+  });
 
-  console.log('Active processes:', Array.from(childProcesses.keys()));
-  console.log('Requested process ID:', processId);
-  console.log('Process info found:', !!processInfo);
-
-  if (!processInfo) {
+  if (!processData) {
     return {
       success: false,
-      message: `Process ${processId} not found`,
+      message: 'Process not found',
       stream: null,
-      processState: 'terminated',
+      processState: 'error',
     };
   }
 
   const stream = new ReadableStream({
     async start(controller) {
-      if (!processInfo.process) {
-        return {
-          success: false,
-          message: `Process ${processId} is not started yet`,
-          stream: null,
-          processState: processInfo.processState,
-        };
+      if (processData) {
+        const combinedOutput = combineProcessOutput(processData.output);
+        controller.enqueue(combinedOutput);
       }
 
-      const processData = await prisma.processInfoDataBase.findUnique({
-        where: { id: processId },
-        select: {
-          output: true,
-        },
-      });
-
-      if (processData) {
-        controller.enqueue(processData.output);
+      const processInfo = childProcesses.get(processId);
+      if (processInfo?.processState !== 'running') {
+        controller.close();
+        return;
       }
 
       processInfo.process.stdout?.on('data', (data) => {
@@ -386,6 +370,6 @@ export function connectCommandStream(processId: string): {
     success: true,
     message: 'Successfully connected to process stream',
     stream,
-    processState: processInfo.processState,
+    processState: processData.processState,
   };
 }

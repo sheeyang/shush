@@ -15,14 +15,25 @@ enum ProcessState {
   initialized
   running
   terminated
+  error
 }
 
-model ProcessInfoDataBase {
-  id           String       @id @default(uuid())
+model ProcessData {
+  id           String          @id
   label        String
   processState ProcessState
-  output       String
+  output       ProcessOutput[]
   command      String
   args         String
-  createdAt    DateTime     @default(now())
+  createdAt    DateTime        @default(now())
+}
+
+model ProcessOutput {
+  id            String      @id @default(uuid())
+  data          String
+  processInfoId String
+  processInfo   ProcessData @relation(fields: [processInfoId], references: [id])
+  createdAt     DateTime    @default(now())
+
+  @@index([processInfoId])
 }

@@ -154,7 +154,12 @@ export const createProcessStore = () => {
             );
           } finally {
             set((state) => {
-              if (state.processes[processId]) {
+              // Only set to terminated if the process was actually running or is still marked as running
+              // and the stream connection attempt finished.
+              if (
+                state.processes[processId] &&
+                state.processes[processId].processState === 'running'
+              ) {
                 state.processes[processId].processState = 'terminated';
               }
             });

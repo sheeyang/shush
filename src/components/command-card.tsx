@@ -5,7 +5,7 @@ import { Label } from './ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
 import CommandOutput from './command-output';
 import { X } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   usePingActions,
   usePingProcessLabel,
@@ -20,6 +20,10 @@ export default function CommandCard({ processId }: { processId: string }) {
 
   const { runProcess, killProcess, connectProcessStream, removeProcess } =
     usePingActions();
+
+  useEffect(() => {
+    connectProcessStream(processId);
+  }, []);
 
   const handleSubmit = async () => {
     await runProcess(processId);
