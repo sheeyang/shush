@@ -131,6 +131,13 @@ export const createProcessStore = () => {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
 
+            // Make sure it is empty to prevent duplicate output
+            set((state) => {
+              if (state.processes[processId]) {
+                state.processes[processId].output = '';
+              }
+            });
+
             while (true) {
               const { done, value } = await reader.read();
 

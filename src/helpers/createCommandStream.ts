@@ -159,11 +159,10 @@ export async function runProcess(
   const processInfo = childProcesses
     .set(processId, {
       process: spawn(command, args),
-      processState: 'running',
     })
     .get(processId);
 
-  if (processInfo?.processState !== 'running') {
+  if (!processInfo?.process) {
     return {
       success: false,
       message: `Failed to run process ${processId}`,
@@ -234,7 +233,7 @@ export async function killProcess(
     };
   }
 
-  if (processInfo.processState !== 'running') {
+  if (!processInfo?.process) {
     return {
       success: false,
       message: `Process ${processId} is not running`,
@@ -332,36 +331,85 @@ export async function connectCommandStream(processId: string): Promise<{
     async start(controller) {
       if (processData) {
         const combinedOutput = combineProcessOutput(processData.output);
-        controller.enqueue(combinedOutput);
+        try {
+          controller.enqueue(combinedOutput);
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message === 'Invalid state: Controller is already closed'
+          ) {
+            return;
+          }
+          console.error('Error sending output to stream:', error);
+        }
       }
 
       const processInfo = childProcesses.get(processId);
-      if (processInfo?.processState !== 'running') {
+      if (!processInfo?.process) {
         controller.close();
         return;
       }
 
       processInfo.process.stdout?.on('data', (data) => {
-        controller.enqueue(data.toString());
+        try {
+          controller.enqueue(data.toString());
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message === 'Invalid state: Controller is already closed'
+          ) {
+            return;
+          }
+          console.error('Error sending output to stream:', error);
+        }
       });
 
       processInfo.process.stderr?.on('data', (data) => {
         const errorOutput = `Error: ${data.toString()}`;
-        controller.enqueue(errorOutput);
+        try {
+          controller.enqueue(errorOutput);
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message === 'Invalid state: Controller is already closed'
+          ) {
+            return;
+          }
+          console.error('Error sending error message to stream:', error);
+        }
       });
 
       processInfo.process.on('close', (code) => {
         const closeMessage = `\nProcess exited with code ${code}\nEnded at: ${new Date().toISOString()}\n`;
 
-        controller.enqueue(closeMessage);
-        controller.close();
+        try {
+          controller.enqueue(closeMessage);
+          controller.close();
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message === 'Invalid state: Controller is already closed'
+          ) {
+            return;
+          }
+          console.error('Error sending close message to stream:', error);
+        }
       });
 
       processInfo.process.on('error', (err) => {
         const errorMessage = `\nProcess error: ${err.message}`;
-
-        controller.enqueue(errorMessage);
-        controller.close();
+        try {
+          controller.enqueue(errorMessage);
+          controller.close();
+        } catch (error) {
+          if (
+            error instanceof Error &&
+            error.message === 'Invalid state: Controller is already closed'
+          ) {
+            return;
+          }
+          console.error('Error sending error message to stream:', error);
+        }
       });
     },
   });
