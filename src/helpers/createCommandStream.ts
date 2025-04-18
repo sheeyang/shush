@@ -43,7 +43,7 @@ async function updateDatabase(
       await prisma.processOutput.create({
         data: {
           data: appendOutput,
-          processInfoId: processId,
+          processDataId: processId,
         },
       });
     }
@@ -287,7 +287,7 @@ export async function removeProcess(processId: string): Promise<{
 
   // Delete associated output records
   await prisma.processOutput.deleteMany({
-    where: { processInfoId: processId },
+    where: { processDataId: processId },
   });
 
   // Delete the process data record
@@ -305,7 +305,6 @@ export async function connectCommandStream(processId: string): Promise<{
   success: boolean;
   message: string;
   stream: ReadableStream | null;
-  processState: ProcessState;
 }> {
   const processData = await prisma.processData.findUnique({
     where: { id: processId },
@@ -324,25 +323,22 @@ export async function connectCommandStream(processId: string): Promise<{
       success: false,
       message: 'Process not found',
       stream: null,
-      processState: 'error',
     };
   }
 
   const stream = new ReadableStream({
     async start(controller) {
-      if (processData) {
-        const combinedOutput = combineProcessOutput(processData.output);
-        try {
-          controller.enqueue(combinedOutput);
-        } catch (error) {
-          if (
-            error instanceof Error &&
-            error.message === 'Invalid state: Controller is already closed'
-          ) {
-            return;
-          }
-          console.error('Error sending output to stream:', error);
+      const combinedOutput = combineProcessOutput(processData.output);
+      try {
+        controller.enqueue(combinedOutput);
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message === 'Invalid state: Controller is already closed'
+        ) {
+          return;
         }
+        console.error('Error sending output to stream:', error);
       }
 
       const processInfo = childProcesses.get(processId);
@@ -419,6 +415,5 @@ export async function connectCommandStream(processId: string): Promise<{
     success: true,
     message: 'Successfully connected to process stream',
     stream,
-    processState: processData.processState,
   };
 }

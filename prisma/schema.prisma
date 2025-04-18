@@ -31,9 +31,9 @@ model ProcessData {
 model ProcessOutput {
   id            String      @id @default(uuid())
   data          String
-  processInfoId String
-  processInfo   ProcessData @relation(fields: [processInfoId], references: [id])
+  processDataId String
+  processData   ProcessData @relation(fields: [processDataId], references: [id])
   createdAt     DateTime    @default(now())
 
-  @@index([processInfoId])
+  @@index([processDataId])
 }

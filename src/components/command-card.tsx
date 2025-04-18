@@ -23,7 +23,7 @@ export default function CommandCard({ processId }: { processId: string }) {
 
   useEffect(() => {
     connectProcessStream(processId);
-  }, []);
+  }, [connectProcessStream, processId]);
 
   const handleSubmit = async () => {
     await runProcess(processId);

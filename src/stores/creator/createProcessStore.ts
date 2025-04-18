@@ -9,7 +9,7 @@ import {
   removeProcessAction,
   runProcessAction,
 } from '../../actions/processActions';
-import { ProcessInfoClient, ProcessState } from '@/interfaces/process';
+import { ProcessInfoClient } from '@/interfaces/process';
 import { useShallow } from 'zustand/shallow';
 import { devtools } from 'zustand/middleware';
 import { StateCreator } from 'zustand';
@@ -112,22 +112,18 @@ export const createProcessStore = () => {
         },
 
         connectProcessStream: async (processId: string) => {
-          // Access current state using get()
           const currentProcess = get().processes[processId];
 
           // Check if process exists and if already connecting
-          if (!currentProcess || currentProcess.isConnectingStream) {
-            console.log(
-              `Stream connection for ${processId} already in progress or process removed.`,
-            );
+          if (currentProcess?.isConnectingStream) {
             return; // Prevent concurrent connection attempts
           }
 
-          // Set flag to indicate connection attempt is starting
           set((state) => {
             if (state.processes[processId]) {
+              // Set flag to indicate connection attempt is starting
               state.processes[processId].isConnectingStream = true;
-              // Reset output only when starting a new connection attempt
+              // Reset output when starting a new connection attempt
               state.processes[processId].output = '';
             }
           });
@@ -137,19 +133,6 @@ export const createProcessStore = () => {
 
             if (!response.ok) {
               throw new Error(`Failed to connect to process ${processId}`);
-            }
-
-            const processStateHeader = response.headers.get(
-              'X-Process-State',
-            ) as ProcessState;
-
-            if (processStateHeader) {
-              set((state) => {
-                // Check process still exists before updating state
-                if (state.processes[processId]) {
-                  state.processes[processId].processState = processStateHeader;
-                }
-              });
             }
 
             if (!response.body) {
@@ -163,16 +146,6 @@ export const createProcessStore = () => {
               const { done, value } = await reader.read();
 
               if (done) {
-                // Stream finished successfully
-                set((state) => {
-                  if (state.processes[processId]) {
-                    // Only set to terminated if it was previously running
-                    if (state.processes[processId].processState === 'running') {
-                      state.processes[processId].processState = 'terminated';
-                    }
-                  }
-                });
-                console.log(`Stream finished for ${processId}`);
                 break; // Exit the loop
               }
 
@@ -194,22 +167,19 @@ export const createProcessStore = () => {
             console.error(`Error connecting stream for ${processId}:`, error);
             set((state) => {
               if (state.processes[processId]) {
-                // Set state to terminated or a specific error state on failure
-                state.processes[processId].processState = 'error'; // Or 'error' if you add that state
+                state.processes[processId].processState = 'error';
               }
             });
-            // Re-throw the error if needed for upstream handling
-            throw new Error(
-              error instanceof Error
-                ? error.message
-                : 'An unknown error occurred during stream connection',
-            );
           } finally {
-            // Always unset the flag when the attempt finishes (success, error, or cancellation)
             set((state) => {
+              // Always unset the flag when the attempt finishes (success, error, or cancellation)
               if (state.processes[processId]) {
                 state.processes[processId].isConnectingStream = false;
+                if (state.processes[processId].processState === 'running') {
+                  state.processes[processId].processState = 'terminated';
+                }
               }
+              console.log(`Stream finished for ${processId}`);
             });
           }
         },
