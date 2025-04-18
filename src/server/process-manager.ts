@@ -3,32 +3,10 @@ import 'server-only';
 import spawn from 'cross-spawn';
 import crypto from 'crypto';
 
-import {
-  ProcessInfoClient,
-  ProcessInfoServer,
-  ProcessState,
-} from '@/interfaces/process';
-import prisma from '@/lib/db';
-import { ProcessOutput } from '@/generated/prisma';
-
-// Create a singleton for managing active processes
-const getChildProcessesMap = (): Map<string, ProcessInfoServer> => {
-  const CHILD_PROCESSES_KEY = Symbol.for('childProcesses');
-
-  // Initialize the map if it doesn't exist in the global scope
-  if (!(CHILD_PROCESSES_KEY in global)) {
-    (global as Record<symbol, Map<string, ProcessInfoServer>>)[
-      CHILD_PROCESSES_KEY
-    ] = new Map<string, ProcessInfoServer>();
-  }
-
-  return (global as Record<symbol, Map<string, ProcessInfoServer>>)[
-    CHILD_PROCESSES_KEY
-  ];
-};
-
-// Get the active processes map
-const childProcesses = getChildProcessesMap();
+import { ProcessInfoClient, ProcessState } from '@/interfaces/process';
+import prisma from '@/server/db';
+import activeProcesses from './processes';
+import StreamQueue from '@/lib/stream-queue';
 
 //TODO: dont call data base so many times
 async function updateDatabase(
@@ -62,10 +40,6 @@ async function updateDatabase(
     console.error(`Error updating database for process ${processId}:`, error);
     return false;
   }
-}
-
-function combineProcessOutput(outputRecords: ProcessOutput[]): string {
-  return outputRecords.map((outputRecord) => outputRecord.data).join('');
 }
 
 export async function getAllProcesses(): Promise<
@@ -157,7 +131,7 @@ export async function runProcess(
   const command = processData.command;
   const args = JSON.parse(processData.args);
 
-  const processInfo = childProcesses
+  const processInfo = activeProcesses
     .set(processId, {
       process: spawn(command, args),
     })
@@ -198,7 +172,7 @@ export async function runProcess(
       state: 'terminated',
     });
 
-    childProcesses.delete(processId);
+    activeProcesses.delete(processId);
   });
 
   processInfo.process.on('error', async (err) => {
@@ -209,7 +183,7 @@ export async function runProcess(
       state: 'terminated',
     });
 
-    childProcesses.delete(processId);
+    activeProcesses.delete(processId);
   });
 
   return {
@@ -224,7 +198,7 @@ export async function runProcess(
 export async function killProcess(
   processId: string,
 ): Promise<{ success: boolean; message: string; processState: ProcessState }> {
-  const processInfo = childProcesses.get(processId);
+  const processInfo = activeProcesses.get(processId);
 
   if (!processInfo) {
     return {
@@ -269,7 +243,7 @@ export async function killProcess(
     };
   }
 
-  childProcesses.delete(processId);
+  activeProcesses.delete(processId);
   await updateDatabase(processId, { state: 'terminated' });
 
   return {
@@ -306,108 +280,80 @@ export async function connectCommandStream(processId: string): Promise<{
   message: string;
   stream: ReadableStream | null;
 }> {
-  const processData = await prisma.processData.findUnique({
-    where: { id: processId },
-    select: {
-      processState: true,
-      output: {
-        orderBy: {
-          createdAt: 'asc', // Ensure output is in the correct order
-        },
-      },
-    },
-  });
-
-  if (!processData) {
-    return {
-      success: false,
-      message: 'Process not found',
-      stream: null,
-    };
-  }
+  let onStdout: (data: Buffer) => void;
+  let onStderr: (data: Buffer) => void;
+  let onClose: (code: number) => void;
+  let onError: (err: Error) => void;
 
   const stream = new ReadableStream({
     async start(controller) {
-      const combinedOutput = combineProcessOutput(processData.output);
-      try {
-        controller.enqueue(combinedOutput);
-      } catch (error) {
-        if (
-          error instanceof Error &&
-          error.message === 'Invalid state: Controller is already closed'
-        ) {
-          return;
-        }
-        console.error('Error sending output to stream:', error);
+      const queue = new StreamQueue(controller);
+
+      const processInfo = activeProcesses.get(processId);
+      if (processInfo?.process) {
+        onStdout = (data: Buffer) => {
+          queue.enqueue(data.toString());
+        };
+        onStderr = (data: Buffer) => {
+          const errorOutput = `Error: ${data.toString()}`;
+          queue.enqueue(errorOutput);
+        };
+        onClose = (code: number) => {
+          const closeMessage = `\nProcess exited with code ${code}\nEnded at: ${new Date().toISOString()}\n`;
+          queue.enqueue(closeMessage);
+          queue.close();
+        };
+        onError = (err: Error) => {
+          const errorMessage = `\nProcess error: ${err.message}`;
+          queue.enqueue(errorMessage);
+          queue.close();
+        };
+
+        processInfo.process.stdout?.on('data', onStdout);
+        processInfo.process.stderr?.on('data', onStderr);
+        processInfo.process.on('close', onClose);
+        processInfo.process.on('error', onError);
       }
 
-      const processInfo = childProcesses.get(processId);
+      const processData = await prisma.processData.findUnique({
+        where: { id: processId },
+        select: {
+          processState: true,
+          output: {
+            orderBy: {
+              createdAt: 'asc', // Ensure output is in the correct order
+            },
+          },
+        },
+      });
+
+      if (!processData) {
+        return {
+          success: false,
+          message: 'Process not found',
+          stream: null,
+        };
+      }
+
+      processData.output.forEach((outputRecord) => {
+        queue.enqueue(outputRecord.data, outputRecord.createdAt);
+      });
+
+      queue.start();
+
       if (!processInfo?.process) {
-        controller.close();
+        queue.close();
         return;
       }
-
-      processInfo.process.stdout?.on('data', (data) => {
-        try {
-          controller.enqueue(data.toString());
-        } catch (error) {
-          if (
-            error instanceof Error &&
-            error.message === 'Invalid state: Controller is already closed'
-          ) {
-            return;
-          }
-          console.error('Error sending output to stream:', error);
-        }
-      });
-
-      processInfo.process.stderr?.on('data', (data) => {
-        const errorOutput = `Error: ${data.toString()}`;
-        try {
-          controller.enqueue(errorOutput);
-        } catch (error) {
-          if (
-            error instanceof Error &&
-            error.message === 'Invalid state: Controller is already closed'
-          ) {
-            return;
-          }
-          console.error('Error sending error message to stream:', error);
-        }
-      });
-
-      processInfo.process.on('close', (code) => {
-        const closeMessage = `\nProcess exited with code ${code}\nEnded at: ${new Date().toISOString()}\n`;
-
-        try {
-          controller.enqueue(closeMessage);
-          controller.close();
-        } catch (error) {
-          if (
-            error instanceof Error &&
-            error.message === 'Invalid state: Controller is already closed'
-          ) {
-            return;
-          }
-          console.error('Error sending close message to stream:', error);
-        }
-      });
-
-      processInfo.process.on('error', (err) => {
-        const errorMessage = `\nProcess error: ${err.message}`;
-        try {
-          controller.enqueue(errorMessage);
-          controller.close();
-        } catch (error) {
-          if (
-            error instanceof Error &&
-            error.message === 'Invalid state: Controller is already closed'
-          ) {
-            return;
-          }
-          console.error('Error sending error message to stream:', error);
-        }
-      });
+    },
+    async cancel() {
+      const processInfo = activeProcesses.get(processId);
+      if (processInfo?.process) {
+        processInfo.process.stdout?.off('data', onStdout);
+        processInfo.process.stderr?.off('data', onStderr);
+        processInfo.process.off('close', onClose);
+        processInfo.process.off('error', onError);
+      }
     },
   });
 

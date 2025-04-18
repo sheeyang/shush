@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { PrismaClient } from '@/generated/prisma';
 
 // Learn more about instantiating PrismaClient in Next.js here: https://www.prisma.io/docs/data-platform/accelerate/getting-started
