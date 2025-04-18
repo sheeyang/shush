@@ -1,4 +1,4 @@
-import { connectCommandStream } from '@/helpers/createCommandStream';
+import { connectCommandStream } from '@/server/process-manager';
 import type { NextRequest } from 'next/server';
 
 export async function GET(

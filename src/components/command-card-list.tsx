@@ -1,6 +1,6 @@
 'use client';
 
-import { usePingActions, usePingProcessIds } from '@/stores/pingStore';
+import { usePingActions, usePingProcessIds } from '@/stores/ping-store';
 import CommandCard from './command-card';
 import { useEffect } from 'react';
 

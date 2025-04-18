@@ -8,7 +8,7 @@ import {
   killProcess,
   removeProcess,
   runProcess,
-} from '@/helpers/createCommandStream';
+} from '@/server/process-manager';
 
 export async function addProcessAction(
   command: string,

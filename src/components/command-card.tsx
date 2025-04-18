@@ -10,7 +10,7 @@ import {
   usePingActions,
   usePingProcessLabel,
   usePingProcessState,
-} from '@/stores/pingStore';
+} from '@/stores/ping-store';
 
 export default function CommandCard({ processId }: { processId: string }) {
   const [isDeleting, setIsDeleting] = useState(false);

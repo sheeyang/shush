@@ -8,7 +8,7 @@ import {
   killProcessAction,
   removeProcessAction,
   runProcessAction,
-} from '../../actions/processActions';
+} from '../../actions/process-actions';
 import { ProcessInfoClient } from '@/interfaces/process';
 import { useShallow } from 'zustand/shallow';
 import { devtools } from 'zustand/middleware';

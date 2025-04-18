@@ -1,6 +1,6 @@
 'use client';
 
-import { createProcessStore } from './creator/createProcessStore';
+import { createProcessStore } from './creator/create-process-store';
 
 const {
   useStore: usePingStore,

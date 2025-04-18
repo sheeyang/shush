@@ -3,7 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { usePingActions } from '@/stores/pingStore';
+import { usePingActions } from '@/stores/ping-store';
 import { useState } from 'react';
 
 export default function CommandInput() {
