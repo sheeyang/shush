@@ -43,9 +43,13 @@ export const createProcessStore = () => {
 
       actions: {
         initializeStore: async () => {
-          const processes = await getAllProcessesAction();
+          const response = await getAllProcessesAction();
+          if (!response.success) {
+            throw new Error(response.message);
+          }
+
           set((state) => {
-            state.processes = processes;
+            state.processes = response.processes;
           });
         },
 
@@ -54,18 +58,17 @@ export const createProcessStore = () => {
           args: string[],
           label: string,
         ) => {
-          const { success, message, processId, processState } =
-            await addProcessAction(command, args, label); // Update to pass label
+          const response = await addProcessAction(command, args, label); // Update to pass label
 
-          if (!success) {
-            throw new Error(message);
+          if (!response.success) {
+            throw new Error(response.message);
           }
 
           set((state) => {
             // Initialize the new flag
-            state.processes[processId] = {
+            state.processes[response.processId] = {
               label,
-              processState,
+              processState: response.processState,
               output: '',
               isConnectingStream: false,
             };
@@ -86,28 +89,26 @@ export const createProcessStore = () => {
         },
 
         runProcess: async (processId: string) => {
-          const { success, message, processState } =
-            await runProcessAction(processId);
+          const response = await runProcessAction(processId);
 
-          if (!success) {
-            throw new Error(message);
+          if (!response.success) {
+            throw new Error(response.message);
           }
 
           set((state) => {
-            state.processes[processId].processState = processState;
+            state.processes[processId].processState = response.processState;
           });
         },
 
         killProcess: async (processId: string) => {
-          const { success, message, processState } =
-            await killProcessAction(processId);
+          const response = await killProcessAction(processId);
 
-          if (!success) {
-            throw new Error(message);
+          if (!response.success) {
+            throw new Error(response.message);
           }
 
           set((state) => {
-            state.processes[processId].processState = processState;
+            state.processes[processId].processState = response.processState;
           });
         },
 

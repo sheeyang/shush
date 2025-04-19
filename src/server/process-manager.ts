@@ -42,9 +42,18 @@ async function updateDatabase(
   }
 }
 
-export async function getAllProcesses(): Promise<
-  Record<string, ProcessInfoClient>
-> {
+type GetAllProcessesReturn = Promise<
+  | {
+      success: true;
+      processes: Record<string, ProcessInfoClient>;
+    }
+  | {
+      success: false;
+      message: string;
+    }
+>;
+
+export async function getAllProcesses(): GetAllProcessesReturn {
   const databaseProcesses = await prisma.processData.findMany({
     select: {
       id: true,
@@ -58,7 +67,7 @@ export async function getAllProcesses(): Promise<
     },
   });
 
-  const clientProcesses = databaseProcesses.reduce(
+  const processes = databaseProcesses.reduce(
     (acc, processData) => {
       // const combinedOutput = combineProcessOutput(processData.output);
 
@@ -73,20 +82,26 @@ export async function getAllProcesses(): Promise<
     {} as Record<string, ProcessInfoClient>,
   );
 
-  return clientProcesses;
+  return { processes, success: true };
 }
 
-// Helper function to create a stream from a command
+type AddProcessReturn = Promise<
+  | {
+      success: true;
+      processId: string;
+      processState: ProcessState;
+    }
+  | {
+      success: false;
+      message: string;
+    }
+>;
+
 export async function addProcess(
   command: string,
   args: string[],
   label: string,
-): Promise<{
-  success: boolean;
-  message: string;
-  processId: string;
-  processState: ProcessState;
-}> {
+): AddProcessReturn {
   const processId = crypto.randomUUID();
 
   // Store in database
@@ -102,15 +117,24 @@ export async function addProcess(
 
   return {
     success: true,
-    message: 'Successfully added process',
     processId,
     processState: 'initialized',
   };
 }
 
-export async function runProcess(
-  processId: string,
-): Promise<{ success: boolean; message: string; processState: ProcessState }> {
+type RunProcessReturn = Promise<
+  | {
+      success: true;
+      processState: ProcessState;
+    }
+  | {
+      success: false;
+      processState: ProcessState;
+      message: string;
+    }
+>;
+
+export async function runProcess(processId: string): RunProcessReturn {
   const processData = await prisma.processData.findUnique({
     where: { id: processId },
     select: {
@@ -188,16 +212,25 @@ export async function runProcess(
 
   return {
     success: true,
-    message: 'Successfully ran process',
     processState: 'running',
   };
 }
 
+type KillProcessReturn = Promise<
+  | {
+      success: true;
+      processState: ProcessState;
+    }
+  | {
+      success: false;
+      processState: ProcessState;
+      message: string;
+    }
+>;
+
 // TODO: check if cross spawn kills the process without taskkill workaround
 // Function to kill a process by its ID
-export async function killProcess(
-  processId: string,
-): Promise<{ success: boolean; message: string; processState: ProcessState }> {
+export async function killProcess(processId: string): KillProcessReturn {
   const processInfo = activeProcesses.get(processId);
 
   if (!processInfo) {
@@ -248,15 +281,16 @@ export async function killProcess(
 
   return {
     success: true,
-    message: 'Successfully killed process',
     processState: 'terminated',
   };
 }
 
-export async function removeProcess(processId: string): Promise<{
+type RemoveProcessReturn = Promise<{
   success: boolean;
   message: string;
-}> {
+}>;
+
+export async function removeProcess(processId: string): RemoveProcessReturn {
   await killProcess(processId);
 
   // Delete associated output records
@@ -275,11 +309,20 @@ export async function removeProcess(processId: string): Promise<{
   };
 }
 
-export async function connectCommandStream(processId: string): Promise<{
-  success: boolean;
-  message: string;
-  stream: ReadableStream | null;
-}> {
+type ConnectCommandStreamReturn = Promise<
+  | {
+      success: true;
+      stream: ReadableStream;
+    }
+  | {
+      success: false;
+      message: string;
+    }
+>;
+
+export async function connectCommandStream(
+  processId: string,
+): ConnectCommandStreamReturn {
   let onStdout: (data: Buffer) => void;
   let onStderr: (data: Buffer) => void;
   let onClose: (code: number) => void;
@@ -359,7 +402,6 @@ export async function connectCommandStream(processId: string): Promise<{
 
   return {
     success: true,
-    message: 'Successfully connected to process stream',
     stream,
   };
 }

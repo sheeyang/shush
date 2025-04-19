@@ -7,13 +7,13 @@ export async function GET(
 ) {
   const { processId } = await params;
 
-  const { success, message, stream } = await connectCommandStream(processId);
+  const response = await connectCommandStream(processId);
 
-  if (!success) {
-    return new Response(message, { status: 404 });
+  if (!response.success) {
+    return new Response(response.message, { status: 404 });
   }
 
-  return new Response(stream, {
+  return new Response(response.stream, {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
       'Transfer-Encoding': 'chunked',

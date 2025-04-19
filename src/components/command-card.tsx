@@ -22,8 +22,10 @@ export default function CommandCard({ processId }: { processId: string }) {
     usePingActions();
 
   useEffect(() => {
-    connectProcessStream(processId);
-  }, [connectProcessStream, processId]);
+    if (processState === 'running') {
+      connectProcessStream(processId);
+    }
+  });
 
   const handleSubmit = async () => {
     await runProcess(processId);
