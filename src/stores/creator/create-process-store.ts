@@ -180,7 +180,7 @@ export const createProcessStore = () => {
                   state.processes[processId].processState = 'terminated';
                 }
               }
-              console.log(`Stream finished for ${processId}`);
+              // console.log(`Stream finished for ${processId}`);
             });
           }
         },

@@ -19,7 +19,7 @@ export default class StreamQueue {
   enqueue(data: string, createdAt = new Date()) {
     this.queue.push({ data, createdAt });
     this.emitter.emit('data');
-    console.log('queued: ', data);
+    // console.log('queued: ', data);
   }
 
   start() {
@@ -55,7 +55,7 @@ export default class StreamQueue {
       if (!data) continue;
       this.controller.enqueue(data.data);
 
-      console.log('processed: ', data);
+      // console.log('processed: ', data);
     }
 
     this.emitter.emit('end');

@@ -24,82 +24,88 @@ export default function SignIn() {
   const router = useRouter();
 
   return (
-    <Card className='max-w-md'>
-      <CardHeader>
-        <CardTitle className='text-lg md:text-xl'>Sign In</CardTitle>
-        <CardDescription className='text-xs md:text-sm'>
-          Enter your email below to login to your account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className='grid gap-4'>
-          <div className='grid gap-2'>
-            <Label htmlFor='email'>Email</Label>
-            <Input
-              id='email'
-              type='email'
-              placeholder='m@example.com'
-              required
-              onChange={(e) => {
-                setEmail(e.target.value);
-              }}
-              value={email}
-            />
-          </div>
-
-          <div className='grid gap-2'>
-            <div className='flex items-center'>
-              <Label htmlFor='password'>Password</Label>
+    <div className='flex min-h-[calc(100vh-2rem)] w-full flex-col items-center justify-center overflow-y-auto py-8'>
+      <Card className='w-lg'>
+        <CardHeader>
+          <CardTitle className='text-lg md:text-xl'>Sign In</CardTitle>
+          <CardDescription className='text-xs md:text-sm'>
+            Enter your email below to login to your account
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className='grid gap-4'>
+            <div className='grid gap-2'>
+              <Label htmlFor='email'>Email</Label>
+              <Input
+                id='email'
+                type='email'
+                placeholder='m@example.com'
+                required
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                }}
+                value={email}
+              />
             </div>
 
-            <Input
-              id='password'
-              type='password'
-              placeholder='password'
-              autoComplete='password'
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
+            <div className='grid gap-2'>
+              <div className='flex items-center'>
+                <Label htmlFor='password'>Password</Label>
+              </div>
 
-          <div className='flex items-center gap-2'>
-            <Checkbox
-              id='remember'
-              onClick={() => {
-                setRememberMe(!rememberMe);
+              <Input
+                id='password'
+                type='password'
+                placeholder='password'
+                autoComplete='password'
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+
+            <div className='flex items-center gap-2'>
+              <Checkbox
+                id='remember'
+                onClick={() => {
+                  setRememberMe(!rememberMe);
+                }}
+              />
+              <Label htmlFor='remember'>Remember me</Label>
+            </div>
+
+            <Button
+              type='submit'
+              className='w-full'
+              disabled={loading}
+              onClick={async () => {
+                await signIn.email(
+                  {
+                    email,
+                    password,
+                  },
+                  {
+                    onRequest: () => {
+                      setLoading(true);
+                    },
+                    onResponse: () => {
+                      setLoading(false);
+                    },
+                    onSuccess: () => {
+                      router.push('/');
+                    },
+                  },
+                );
               }}
-            />
-            <Label htmlFor='remember'>Remember me</Label>
+            >
+              {loading ? (
+                <Loader2 size={16} className='animate-spin' />
+              ) : (
+                'Login'
+              )}
+            </Button>
           </div>
-
-          <Button
-            type='submit'
-            className='w-full'
-            disabled={loading}
-            onClick={async () => {
-              await signIn.email(
-                {
-                  email,
-                  password,
-                },
-                {
-                  onRequest: () => {
-                    setLoading(true);
-                  },
-                  onResponse: () => {
-                    setLoading(false);
-                  },
-                  onSuccess: () => {
-                    router.push('/');
-                  },
-                },
-              );
-            }}
-          >
-            {loading ? <Loader2 size={16} className='animate-spin' /> : 'Login'}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
