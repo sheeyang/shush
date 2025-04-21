@@ -6,6 +6,7 @@ import { AppSidebar } from '@/components/shush-sidebar';
 import { cookies } from 'next/headers';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { ThemeProvider } from '@/components/theme-provider';
+import { Toaster } from '@/components/ui/sonner';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -50,6 +51,7 @@ export default async function RootLayout({
               </ScrollArea>
             </div>
           </SidebarProvider>
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>
