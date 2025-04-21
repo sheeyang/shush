@@ -2,7 +2,7 @@ import { connectCommandStream } from '@/server/process-manager';
 import type { NextRequest } from 'next/server';
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ processId: string }> },
 ) {
   const { processId } = await params;

@@ -22,8 +22,11 @@ export default function CommandCard({ processId }: { processId: string }) {
     usePingActions();
 
   useEffect(() => {
-    connectProcessStream(processId);
-  }, [connectProcessStream, processId]);
+    if (processState !== 'initialized') {
+      connectProcessStream(processId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleSubmit = async () => {
     await runProcess(processId);

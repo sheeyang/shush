@@ -11,7 +11,7 @@ import {
 } from '../../actions/process-actions';
 import { ProcessInfoClient } from '@/interfaces/process';
 import { useShallow } from 'zustand/shallow';
-import { devtools } from 'zustand/middleware';
+import { devtools, persist } from 'zustand/middleware';
 import { StateCreator } from 'zustand';
 
 type ProcessStoreActions = {
@@ -32,8 +32,19 @@ type ProcessStore = {
   actions: ProcessStoreActions;
 };
 
-const middlewares = <T>(f: StateCreator<T, [['zustand/immer', never]], []>) =>
-  devtools(immer(f));
+const middlewares = (
+  f: StateCreator<ProcessStore, [['zustand/immer', never]], []>,
+) =>
+  devtools(
+    immer(
+      persist(f, {
+        name: 'processes',
+        partialize: (state) => ({
+          processes: state.processes,
+        }),
+      }),
+    ),
+  );
 
 export const createProcessStore = () => {
   const useStore = create<ProcessStore>()(
@@ -84,7 +95,6 @@ export const createProcessStore = () => {
 
           set((state) => {
             delete state.processes[processId];
-            // Remove processIds update
           });
         },
 
@@ -121,12 +131,7 @@ export const createProcessStore = () => {
           }
 
           set((state) => {
-            if (state.processes[processId]) {
-              // Set flag to indicate connection attempt is starting
-              state.processes[processId].isConnectingStream = true;
-              // Reset output when starting a new connection attempt
-              state.processes[processId].output = '';
-            }
+            state.processes[processId].isConnectingStream = true;
           });
 
           try {
@@ -143,6 +148,8 @@ export const createProcessStore = () => {
             const reader = response.body.getReader();
             const decoder = new TextDecoder();
 
+            let output = '';
+
             while (true) {
               const { done, value } = await reader.read();
 
@@ -152,33 +159,21 @@ export const createProcessStore = () => {
 
               const chunk = decoder.decode(value, { stream: true });
               set((state) => {
-                if (state.processes[processId]) {
-                  state.processes[processId].output += chunk;
-                } else {
-                  // Process might have been removed while streaming
-                  console.warn(
-                    `Process ${processId} removed while streaming output.`,
-                  );
-                  reader.cancel('Process removed'); // Attempt to cancel the reader
-                  return; // Exit update logic
-                }
+                output += chunk;
+                state.processes[processId].output = output;
               });
             }
           } catch (error) {
             console.error(`Error connecting stream for ${processId}:`, error);
             set((state) => {
-              if (state.processes[processId]) {
-                state.processes[processId].processState = 'error';
-              }
+              state.processes[processId].processState = 'error';
             });
           } finally {
             set((state) => {
               // Always unset the flag when the attempt finishes (success, error, or cancellation)
-              if (state.processes[processId]) {
-                state.processes[processId].isConnectingStream = false;
-                if (state.processes[processId].processState === 'running') {
-                  state.processes[processId].processState = 'terminated';
-                }
+              state.processes[processId].isConnectingStream = false;
+              if (state.processes[processId].processState === 'running') {
+                state.processes[processId].processState = 'terminated';
               }
               // console.log(`Stream finished for ${processId}`);
             });

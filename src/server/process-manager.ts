@@ -73,7 +73,7 @@ export async function getAllProcesses(): GetAllProcessesReturn {
 
       acc[processData.id] = {
         label: processData.label,
-        output: '',
+        output: processData.output.map((output) => output.data).join(''),
         processState: processData.processState,
         isConnectingStream: false,
       };
@@ -261,11 +261,6 @@ export async function killProcess(processId: string): KillProcessReturn {
     } else {
       processInfo.process.kill();
     }
-
-    processInfo.process.stdout?.removeAllListeners('data');
-    processInfo.process.stderr?.removeAllListeners('data');
-    processInfo.process.removeAllListeners('close');
-    processInfo.process.removeAllListeners('error');
   } catch (error) {
     console.error('Error killing process:', error);
 
@@ -344,12 +339,12 @@ export async function connectCommandStream(
         onClose = (code: number) => {
           const closeMessage = `\nProcess exited with code ${code}\nEnded at: ${new Date().toISOString()}\n`;
           queue.enqueue(closeMessage);
-          queue.close();
+          // queue.close();
         };
         onError = (err: Error) => {
           const errorMessage = `\nProcess error: ${err.message}`;
           queue.enqueue(errorMessage);
-          queue.close();
+          // queue.close();
         };
 
         processInfo.process.stdout?.on('data', onStdout);
