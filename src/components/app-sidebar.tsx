@@ -12,7 +12,7 @@ import {
   SidebarFooter,
 } from '@/components/ui/sidebar';
 import Link from 'next/link';
-import { ModeToggle } from '@/components/mode-toggle';
+import { ModeToggle } from '@/components/theme/mode-toggle';
 
 // Menu items.
 const items = [

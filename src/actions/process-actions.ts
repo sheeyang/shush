@@ -4,20 +4,28 @@ import 'server-only';
 
 import { auth } from '@/lib/server/auth';
 import { headers } from 'next/headers';
-
-import {
-  addProcess,
-  getAllProcesses,
-  killProcess,
-  removeProcess,
-  runProcess,
-} from '@/server/process-manager';
+import { addProcess } from '@/lib/server/process-manager/add-process';
+import { runProcess } from '@/lib/server/process-manager/run-process';
+import { killProcess } from '@/lib/server/process-manager/kill-process';
+import { removeProcess } from '@/lib/server/process-manager/remove-process';
+import { getAllProcesses } from '@/lib/server/process-manager/get-all-processes';
 
 export async function addProcessAction(
   command: string,
   args: string[],
   label: string,
 ) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    } as const;
+  }
+
   return addProcess(command, args, label);
 }
 

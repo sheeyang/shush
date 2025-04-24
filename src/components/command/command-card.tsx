@@ -1,8 +1,8 @@
 'use client';
 
-import { Button } from './ui/button';
-import { Label } from './ui/label';
-import { Card, CardContent, CardFooter, CardHeader } from './ui/card';
+import { Button } from '../ui/button';
+import { Label } from '../ui/label';
+import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import CommandOutput from './command-output';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';

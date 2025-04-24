@@ -35,8 +35,8 @@ export default function AddUserCard() {
 
     try {
       const response = await authClient.admin.createUser({
-        email: username,
-        name: `${username}@email.email`,
+        email: `${username}@email.email`,
+        name: username,
         password: password,
         role: 'user',
       });

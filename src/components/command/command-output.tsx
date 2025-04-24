@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { ResizableScrollArea } from './ui/scroll-area';
+import { ResizableScrollArea } from '../ui/scroll-area';
 import { usePingProcessOutput } from '@/stores/ping-store';
 
 export default function CommandOutput({ processId }: { processId: string }) {

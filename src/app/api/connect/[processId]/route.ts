@@ -1,13 +1,28 @@
-import { connectCommandStream } from '@/server/process-manager';
+import 'server-only';
+
+import { auth } from '@/lib/server/auth';
+import { connectOutputStream } from '@/lib/server/process-manager/connect-output-stream';
+import { headers } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ processId: string }> },
 ) {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) {
+    return {
+      success: false,
+      message: 'Unauthorized',
+    } as const;
+  }
+
   const { processId } = await params;
 
-  const response = await connectCommandStream(processId);
+  const response = await connectOutputStream(processId);
 
   if (!response.success) {
     return new Response(response.message, { status: 404 });

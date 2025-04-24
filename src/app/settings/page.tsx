@@ -1,17 +1,9 @@
 import AddUserCard from '@/components/settings/add-user-card';
 import ManageUsersCard from '@/components/settings/manage-users-card';
-import { auth } from '@/lib/server/auth';
-import { headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { checkAuth } from '@/lib/check-auth';
 
 export default async function SettingsPage() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
-
-  if (!session) {
-    redirect('/sign-in');
-  }
+  await checkAuth();
 
   return (
     <div className='container mx-auto py-10'>
