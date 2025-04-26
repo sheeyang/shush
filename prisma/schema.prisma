@@ -15,7 +15,6 @@ enum ProcessState {
   initialized
   running
   terminated
-  error
 }
 
 model ProcessData {

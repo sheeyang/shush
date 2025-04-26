@@ -159,7 +159,6 @@ export const createProcessStore = () => {
             console.error(`Error connecting stream for ${processId}:`, error);
             set((state) => {
               state.processes[processId].isConnectingStream = false;
-              state.processes[processId].processState = 'error';
             });
             eventSource.close();
           };

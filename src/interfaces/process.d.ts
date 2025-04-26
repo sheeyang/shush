@@ -1,6 +1,6 @@
 import type { ChildProcess } from 'child_process';
 
-export type ProcessState = 'initialized' | 'running' | 'terminated' | 'error';
+export type ProcessState = 'initialized' | 'running' | 'terminated';
 
 type ProcessEventListener = {
   onStdout: (data: Buffer) => Promise<void>;
