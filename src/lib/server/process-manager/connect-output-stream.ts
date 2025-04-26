@@ -24,30 +24,47 @@ export async function connectOutputStream(
       }
     | undefined;
 
+  const encoder = new TextEncoder();
+
   try {
     const stream = new ReadableStream({
       async start(controller) {
-        const queue = controller;
-
         const processInfo = activeProcesses.get(processId);
+        function send(data: string, event?: string) {
+          const formatted =
+            data
+              .split('\n')
+              .map((line) => {
+                if (event) {
+                  return `event: ${event}\ndata: ${line}`;
+                }
+                return `data: ${line}`;
+              })
+              .join('\n') + '\n\n';
+
+          console.log(formatted);
+
+          controller.enqueue(encoder.encode(formatted));
+        }
+
         if (processInfo?.process) {
           streamEventListeners = {
             onStdout: (data: Buffer) => {
-              queue.enqueue(data.toString());
+              send(data.toString());
             },
             onStderr: (data: Buffer) => {
               const errorOutput = `Error: ${data.toString()}`;
-              queue.enqueue(errorOutput);
+              send(errorOutput);
             },
             onClose: (code: number) => {
               const closeMessage = `\nProcess exited with code ${code}\nEnded at: ${new Date().toISOString()}\n`;
-              queue.enqueue(closeMessage);
-              queue.close();
+              send(closeMessage, 'close');
+              controller.close();
             },
             onError: (err: Error) => {
               const errorMessage = `\nProcess error: ${err.message}`;
-              queue.enqueue(errorMessage);
-              queue.close();
+              send(errorMessage, 'close');
+              controller.close();
             },
           };
 
@@ -79,7 +96,7 @@ export async function connectOutputStream(
         }
 
         processData.output.forEach((outputRecord) => {
-          queue.enqueue(outputRecord.data);
+          send(outputRecord.data);
         });
       },
       async cancel() {

@@ -134,50 +134,35 @@ export const createProcessStore = () => {
             state.processes[processId].isConnectingStream = true;
           });
 
-          try {
-            const response = await fetch(`/api/connect/${processId}`);
+          const eventSource = new EventSource(`/api/connect/${processId}`);
 
-            if (!response.ok) {
-              throw new Error(`Failed to connect to process ${processId}`);
-            }
+          let output = '';
 
-            if (!response.body) {
-              throw new Error('Response body is null');
-            }
+          eventSource.onmessage = (event) => {
+            output += event.data;
+            set((state) => {
+              state.processes[processId].output = output;
+            });
+          };
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
+          eventSource.addEventListener('close', (event) => {
+            output += event.data;
+            set((state) => {
+              state.processes[processId].isConnectingStream = false;
+              state.processes[processId].output = output;
+              state.processes[processId].processState = 'terminated';
+            });
+            eventSource.close();
+          });
 
-            let output = '';
-
-            while (true) {
-              const { done, value } = await reader.read();
-
-              if (done) {
-                break; // Exit the loop
-              }
-
-              const chunk = decoder.decode(value, { stream: true });
-              set((state) => {
-                output += chunk;
-                state.processes[processId].output = output;
-              });
-            }
-          } catch (error) {
+          eventSource.onerror = (error) => {
             console.error(`Error connecting stream for ${processId}:`, error);
             set((state) => {
+              state.processes[processId].isConnectingStream = false;
               state.processes[processId].processState = 'error';
             });
-          } finally {
-            set((state) => {
-              // Always unset the flag when the attempt finishes (success, error, or cancellation)
-              state.processes[processId].isConnectingStream = false;
-              if (state.processes[processId].processState === 'running') {
-                state.processes[processId].processState = 'terminated';
-              }
-              // console.log(`Stream finished for ${processId}`);
-            });
-          }
+            eventSource.close();
+          };
         },
       },
     })),
