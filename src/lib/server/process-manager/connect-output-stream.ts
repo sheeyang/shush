@@ -1,4 +1,3 @@
-import StreamQueue from '@/lib/stream-queue';
 import activeProcesses from '../processes';
 import prisma from '../db';
 
@@ -25,12 +24,10 @@ export async function connectOutputStream(
       }
     | undefined;
 
-  let queue: StreamQueue;
-
   try {
     const stream = new ReadableStream({
       async start(controller) {
-        queue = new StreamQueue(controller);
+        const queue = controller;
 
         const processInfo = activeProcesses.get(processId);
         if (processInfo?.process) {
@@ -82,15 +79,8 @@ export async function connectOutputStream(
         }
 
         processData.output.forEach((outputRecord) => {
-          queue.enqueue(outputRecord.data, outputRecord.createdAt);
+          queue.enqueue(outputRecord.data);
         });
-
-        queue.start();
-
-        if (!processInfo?.process) {
-          queue.close();
-          return;
-        }
       },
       async cancel() {
         const processInfo = activeProcesses.get(processId);
@@ -106,8 +96,6 @@ export async function connectOutputStream(
           processInfo.process.off('close', streamEventListeners.onClose);
           processInfo.process.off('error', streamEventListeners.onError);
         }
-
-        queue.close();
       },
     });
 
