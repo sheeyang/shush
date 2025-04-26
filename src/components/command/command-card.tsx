@@ -5,21 +5,22 @@ import { Label } from '../ui/label';
 import { Card, CardContent, CardFooter, CardHeader } from '../ui/card';
 import CommandOutput from './command-output';
 import { X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import {
   usePingActions,
   usePingProcessLabel,
   usePingProcessState,
 } from '@/stores/ping-store';
+import { useTransition } from 'react';
 
 export default function CommandCard({ processId }: { processId: string }) {
-  const [isDeleting, setIsDeleting] = useState(false);
-
   const label = usePingProcessLabel(processId);
   const processState = usePingProcessState(processId);
 
   const { runProcess, killProcess, connectProcessStream, removeProcess } =
     usePingActions();
+
+  const [isDeleting, startTransition] = useTransition();
 
   useEffect(() => {
     if (processState !== 'initialized') {
@@ -34,8 +35,9 @@ export default function CommandCard({ processId }: { processId: string }) {
   };
 
   const handleRemove = () => {
-    setIsDeleting(true);
-    removeProcess(processId);
+    startTransition(() => {
+      removeProcess(processId);
+    });
   };
 
   return (
