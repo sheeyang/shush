@@ -132,24 +132,21 @@ export const createProcessStore = () => {
 
           set((state) => {
             state.processes[processId].isConnectingStream = true;
+            state.processes[processId].output = '';
           });
 
           const eventSource = new EventSource(`/api/connect/${processId}`);
 
-          let output = '';
-
           eventSource.onmessage = (event) => {
-            output += event.data;
             set((state) => {
-              state.processes[processId].output = output;
+              state.processes[processId].output += event.data;
             });
           };
 
           eventSource.addEventListener('close', (event) => {
-            output += event.data;
             set((state) => {
               state.processes[processId].isConnectingStream = false;
-              state.processes[processId].output = output;
+              state.processes[processId].output += event.data;
               state.processes[processId].processState = 'terminated';
             });
             eventSource.close();
