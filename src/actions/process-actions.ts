@@ -20,10 +20,7 @@ export async function addProcessAction(
   });
 
   if (!session) {
-    return {
-      success: false,
-      message: 'Unauthorized',
-    } as const;
+    throw new Error('Unauthorized');
   }
 
   return addProcess(command, args, label);
@@ -35,10 +32,7 @@ export async function runProcessAction(processId: string) {
   });
 
   if (!session) {
-    return {
-      success: false,
-      message: 'Unauthorized',
-    } as const;
+    throw new Error('Unauthorized');
   }
 
   return runProcess(processId);
@@ -50,10 +44,7 @@ export async function killProcessAction(processId: string) {
   });
 
   if (!session) {
-    return {
-      success: false,
-      message: 'Unauthorized',
-    } as const;
+    throw new Error('Unauthorized');
   }
 
   return killProcess(processId);
@@ -65,10 +56,7 @@ export async function removeProcessAction(processId: string) {
   });
 
   if (!session) {
-    return {
-      success: false,
-      message: 'Unauthorized',
-    } as const;
+    throw new Error('Unauthorized');
   }
 
   return removeProcess(processId);
@@ -80,10 +68,7 @@ export async function getAllProcessesAction() {
   });
 
   if (!session) {
-    return {
-      success: false,
-      message: 'Unauthorized',
-    } as const;
+    throw new Error('Unauthorized');
   }
 
   return getAllProcesses();

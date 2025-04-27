@@ -1,7 +1,7 @@
 import activeProcesses from '../processes';
 import prisma from '../db';
 
-type ConnectCommandStreamReturn = Promise<
+type ConnectProcessStreamReturn = Promise<
   | {
       success: true;
       stream: ReadableStream;
@@ -12,9 +12,9 @@ type ConnectCommandStreamReturn = Promise<
     }
 >;
 
-export async function connectOutputStream(
+export async function connectProcessStream(
   processId: string,
-): ConnectCommandStreamReturn {
+): ConnectProcessStreamReturn {
   let streamEventListeners:
     | {
         onStdout: (data: Buffer) => void;
@@ -31,16 +31,21 @@ export async function connectOutputStream(
       async start(controller) {
         const processInfo = activeProcesses.get(processId);
         function send(data: string, event?: string) {
-          const formatted =
-            data
-              .split('\n')
-              .map((line) => {
-                if (event) {
-                  return `event: ${event}\ndata: ${line}`;
-                }
-                return `data: ${line}`;
-              })
-              .join('\n') + '\n\n';
+          // const formatted =
+          //   data
+          //     .split('\n')
+          //     .map((line) => {
+          //       if (event) {
+          //         return `event: ${event}\ndata: ${line}`;
+          //       }
+          //       return `data: ${line}`;
+          //     })
+          //     .join('\n') + '\n\n';
+
+          const formatted = JSON.stringify({
+            data,
+            event,
+          });
 
           console.log(formatted);
 
@@ -88,16 +93,19 @@ export async function connectOutputStream(
         });
 
         if (!processData) {
-          return {
-            success: false,
-            message: 'Process not found',
-            stream: null,
-          };
+          return;
         }
 
         processData.output.forEach((outputRecord) => {
           send(outputRecord.data);
         });
+
+        // ensure that the stream is closed if the process is already terminated
+        if (!processInfo?.process) {
+          send('', 'close');
+          controller.close();
+          return;
+        }
       },
       async cancel() {
         const processInfo = activeProcesses.get(processId);

@@ -3,7 +3,6 @@
 import { createProcessStore } from './creators/create-process-store';
 
 const {
-  useStore: usePingStore,
   useProcessIds: usePingProcessIds,
   useProcessState: usePingProcessState,
   useProcessOutput: usePingProcessOutput,
@@ -12,7 +11,6 @@ const {
 } = createProcessStore();
 
 export {
-  usePingStore,
   usePingProcessIds,
   usePingProcessState,
   usePingProcessOutput,

@@ -1,7 +1,7 @@
 import 'server-only';
 
 import { auth } from '@/lib/server/auth';
-import { connectOutputStream } from '@/lib/server/process-manager/connect-output-stream';
+import { connectProcessStream } from '@/lib/server/process-manager/connect-process-stream';
 import { headers } from 'next/headers';
 import type { NextRequest } from 'next/server';
 
@@ -22,7 +22,7 @@ export async function GET(
 
   const { processId } = await params;
 
-  const response = await connectOutputStream(processId);
+  const response = await connectProcessStream(processId);
 
   if (!response.success) {
     return new Response(response.message, { status: 404 });

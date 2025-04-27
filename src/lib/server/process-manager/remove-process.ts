@@ -1,36 +1,29 @@
 import prisma from '../db';
 import { killProcess } from './kill-process';
 
-type RemoveProcessReturn = Promise<{
-  success: boolean;
-  message: string;
-}>;
-
-export async function removeProcess(processId: string): RemoveProcessReturn {
+export async function removeProcess(processId: string): Promise<void> {
   try {
     await killProcess(processId);
-
-    // Use transaction to ensure atomic deletion
-    await prisma.$transaction([
-      // Delete associated output records
-      prisma.processOutput.deleteMany({
-        where: { processDataId: processId },
-      }),
-      // Delete the process data record
-      prisma.processData.delete({
-        where: { id: processId },
-      }),
-    ]);
-
-    return {
-      success: true,
-      message: 'Process removed',
-    };
   } catch (error) {
-    console.error(`Error removing process ${processId}:`, error);
-    return {
-      success: false,
-      message: `Failed to remove process: ${error instanceof Error ? error.message : 'Unknown error'}`,
-    };
+    if (error instanceof Error) {
+      // ignore the error if the process is not found or not running
+      if (
+        error.message.includes('not found') ||
+        error.message.includes('is not running')
+      ) {
+      } else throw error;
+    }
   }
+
+  // Use transaction to ensure atomic deletion
+  await prisma.$transaction([
+    // Delete associated output records
+    prisma.processOutput.deleteMany({
+      where: { processDataId: processId },
+    }),
+    // Delete the process data record
+    prisma.processData.delete({
+      where: { id: processId },
+    }),
+  ]);
 }

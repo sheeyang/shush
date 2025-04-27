@@ -1,9 +1,8 @@
 import activeProcesses from '../../processes';
 
-export async function cleanupProcess(
-  processId: string,
-  processInfo = activeProcesses.get(processId),
-) {
+export async function cleanupProcess(processId: string) {
+  const processInfo = activeProcesses.get(processId);
+
   if (!processInfo) return;
 
   try {

@@ -46,6 +46,55 @@ const middlewares = (
     ),
   );
 
+function createJsonObjectTransformStream() {
+  let buffer = '';
+  let openBraces = 0;
+  let start: number | null = null;
+
+  return new TransformStream({
+    async transform(chunk, controller) {
+      buffer +=
+        typeof chunk === 'string' ? chunk : Buffer.from(chunk).toString();
+
+      for (let i = 0; i < buffer.length; i++) {
+        const char = buffer[i];
+
+        if (char === '{') {
+          if (openBraces === 0) {
+            start = i;
+          }
+          openBraces++;
+        } else if (char === '}') {
+          openBraces--;
+          if (openBraces === 0 && start !== null) {
+            const jsonString = buffer.slice(start, i + 1);
+            try {
+              const obj = JSON.parse(jsonString);
+              controller.enqueue(obj);
+            } catch (err) {
+              controller.error(err);
+              return;
+            }
+            buffer = buffer.slice(i + 1);
+            i = -1;
+            start = null;
+          }
+        }
+      }
+    },
+    async flush(controller) {
+      if (buffer.trim()) {
+        try {
+          const obj = JSON.parse(buffer);
+          controller.enqueue(obj);
+        } catch (err) {
+          controller.error(err);
+        }
+      }
+    },
+  });
+}
+
 export const createProcessStore = () => {
   const useStore = create<ProcessStore>()(
     middlewares((set, get) => ({
@@ -54,13 +103,10 @@ export const createProcessStore = () => {
 
       actions: {
         initializeStore: async () => {
-          const response = await getAllProcessesAction();
-          if (!response.success) {
-            throw new Error(response.message);
-          }
+          const processes = await getAllProcessesAction();
 
           set((state) => {
-            state.processes = response.processes;
+            state.processes = processes;
           });
         },
 
@@ -69,17 +115,13 @@ export const createProcessStore = () => {
           args: string[],
           label: string,
         ) => {
-          const response = await addProcessAction(command, args, label); // Update to pass label
-
-          if (!response.success) {
-            throw new Error(response.message);
-          }
+          const processId = await addProcessAction(command, args, label); // Update to pass label
 
           set((state) => {
             // Initialize the new flag
-            state.processes[response.processId] = {
+            state.processes[processId] = {
               label,
-              processState: response.processState,
+              processState: 'initialized',
               output: '',
               isConnectingStream: false,
             };
@@ -87,11 +129,7 @@ export const createProcessStore = () => {
         },
 
         removeProcess: async (processId: string) => {
-          const { success, message } = await removeProcessAction(processId);
-
-          if (!success) {
-            throw new Error(message);
-          }
+          await removeProcessAction(processId);
 
           set((state) => {
             delete state.processes[processId];
@@ -99,66 +137,66 @@ export const createProcessStore = () => {
         },
 
         runProcess: async (processId: string) => {
-          const response = await runProcessAction(processId);
-
-          if (!response.success) {
-            throw new Error(response.message);
-          }
+          await runProcessAction(processId);
 
           set((state) => {
-            state.processes[processId].processState = response.processState;
+            state.processes[processId].processState = 'running';
           });
         },
 
         killProcess: async (processId: string) => {
-          const response = await killProcessAction(processId);
-
-          if (!response.success) {
-            throw new Error(response.message);
-          }
+          await killProcessAction(processId);
 
           set((state) => {
-            state.processes[processId].processState = response.processState;
+            state.processes[processId].processState = 'terminated';
           });
         },
 
         connectProcessStream: async (processId: string) => {
           const currentProcess = get().processes[processId];
 
-          // Check if process exists and if already connecting
           if (currentProcess?.isConnectingStream) {
-            return; // Prevent concurrent connection attempts
+            return;
           }
 
           set((state) => {
             state.processes[processId].isConnectingStream = true;
-            state.processes[processId].output = '';
           });
 
-          const eventSource = new EventSource(`/api/connect/${processId}`);
+          try {
+            const response = await fetch(`/api/connect/${processId}`);
+            if (!response.body) {
+              throw new Error('No response body available');
+            }
 
-          eventSource.onmessage = (event) => {
-            set((state) => {
-              state.processes[processId].output += event.data;
-            });
-          };
+            const jsonTransformStream = createJsonObjectTransformStream();
 
-          eventSource.addEventListener('close', (event) => {
+            const transformedStream =
+              response.body.pipeThrough(jsonTransformStream);
+            const reader = transformedStream.getReader();
+
+            while (true) {
+              const { done, value: message } = await reader.read();
+
+              if (done) break;
+
+              set((state) => {
+                if (message.event === 'close') {
+                  state.processes[processId].processState = 'terminated';
+                  state.processes[processId].isConnectingStream = false;
+                }
+                if (message.data) {
+                  state.processes[processId].output += message.data;
+                }
+              });
+            }
+          } catch (error) {
+            console.error('Error reading process stream:', error);
+          } finally {
             set((state) => {
               state.processes[processId].isConnectingStream = false;
-              state.processes[processId].output += event.data;
-              state.processes[processId].processState = 'terminated';
             });
-            eventSource.close();
-          });
-
-          eventSource.onerror = (error) => {
-            console.error(`Error connecting stream for ${processId}:`, error);
-            set((state) => {
-              state.processes[processId].isConnectingStream = false;
-            });
-            eventSource.close();
-          };
+          }
         },
       },
     })),
