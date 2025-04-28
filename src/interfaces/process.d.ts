@@ -20,3 +20,17 @@ type ProcessInfoClient = {
   output: string;
   isConnectingStream: boolean;
 };
+
+type ProcessOutputInfo = {
+  processId: string;
+  output: string;
+  lastOutputTime: number;
+  firstOutputTime: number;
+};
+
+type StreamEventListeners = {
+  onStdout: (data: Buffer) => void;
+  onStderr: (data: Buffer) => void;
+  onClose: (code: number) => void;
+  onError: (err: Error) => void;
+};

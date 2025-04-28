@@ -1,148 +1,107 @@
 import activeProcesses from '../processes';
-import prisma from '../db';
+import { ChildProcess } from 'child_process';
+import { StreamEventListeners } from '@/interfaces/process';
+import { sendHistoricalOutput } from './helpers/send-historical-output';
 
-type ConnectProcessStreamReturn = Promise<
-  | {
-      success: true;
-      stream: ReadableStream;
-    }
-  | {
-      success: false;
-      message: string;
-    }
->;
+type ProcessStreamResult =
+  | { success: true; stream: ReadableStream }
+  | { success: false; message: string };
 
 export async function connectProcessStream(
   processId: string,
-): ConnectProcessStreamReturn {
-  let streamEventListeners:
-    | {
-        onStdout: (data: Buffer) => void;
-        onStderr: (data: Buffer) => void;
-        onClose: (code: number) => void;
-        onError: (err: Error) => void;
-      }
-    | undefined;
-
+): Promise<ProcessStreamResult> {
   const encoder = new TextEncoder();
+  let listeners: StreamEventListeners | undefined;
 
   try {
     const stream = new ReadableStream({
       async start(controller) {
         const processInfo = activeProcesses.get(processId);
+        const process = processInfo?.process;
+
+        // Helper function for sending data through the stream
         function send(data: string, event?: string) {
-          // const formatted =
-          //   data
-          //     .split('\n')
-          //     .map((line) => {
-          //       if (event) {
-          //         return `event: ${event}\ndata: ${line}`;
-          //       }
-          //       return `data: ${line}`;
-          //     })
-          //     .join('\n') + '\n\n';
-
-          const formatted = JSON.stringify({
-            data,
-            event,
-          });
-
-          console.log(formatted);
-
+          const formatted = JSON.stringify({ data, event });
           controller.enqueue(encoder.encode(formatted));
         }
 
-        if (processInfo?.process) {
-          streamEventListeners = {
-            onStdout: (data: Buffer) => {
-              send(data.toString());
-            },
-            onStderr: (data: Buffer) => {
-              const errorOutput = `Error: ${data.toString()}`;
-              send(errorOutput);
-            },
-            onClose: (code: number) => {
-              const closeMessage = `\nProcess exited with code ${code}\nEnded at: ${new Date().toISOString()}\n`;
-              send(closeMessage, 'close');
-              controller.close();
-            },
-            onError: (err: Error) => {
-              const errorMessage = `\nProcess error: ${err.message}`;
-              send(errorMessage, 'close');
-              controller.close();
-            },
-          };
+        // Retrieve historical output from database
+        await sendHistoricalOutput(processId, send);
 
-          // Add event listeners with null checks
-          processInfo.process.stdout?.on('data', streamEventListeners.onStdout);
-          processInfo.process.stderr?.on('data', streamEventListeners.onStderr);
-          processInfo.process.on('close', streamEventListeners.onClose);
-          processInfo.process.on('error', streamEventListeners.onError);
-        }
-
-        const processData = await prisma.processData.findUnique({
-          where: { id: processId },
-          select: {
-            processState: true,
-            output: {
-              orderBy: {
-                createdAt: 'asc', // Ensure output is in the correct order
-              },
-            },
-          },
-        });
-
-        if (!processData) {
-          return;
-        }
-
-        processData.output.forEach((outputRecord) => {
-          send(outputRecord.data);
-        });
-
-        // ensure that the stream is closed if the process is already terminated
-        if (!processInfo?.process) {
+        // If process is no longer active, close the stream and return
+        if (!process) {
           send('', 'close');
           controller.close();
           return;
         }
+
+        // Set up event listeners for the active process
+        listeners = createEventListeners(send, controller);
+        attachEventListeners(process, listeners);
       },
-      async cancel() {
-        const processInfo = activeProcesses.get(processId);
-        if (processInfo?.process && streamEventListeners) {
-          processInfo.process.stdout?.off(
-            'data',
-            streamEventListeners.onStdout,
-          );
-          processInfo.process.stderr?.off(
-            'data',
-            streamEventListeners.onStderr,
-          );
-          processInfo.process.off('close', streamEventListeners.onClose);
-          processInfo.process.off('error', streamEventListeners.onError);
-        }
+
+      cancel() {
+        cleanupEventListeners(processId, listeners);
       },
     });
 
-    return {
-      success: true,
-      stream,
-    };
+    return { success: true, stream };
   } catch (error) {
-    console.error(`Error connecting stream for process ${processId}:`, error);
-
-    // Clean up in case of error
-    const processInfo = activeProcesses.get(processId);
-    if (processInfo?.process && streamEventListeners) {
-      processInfo.process.stdout?.off('data', streamEventListeners.onStdout);
-      processInfo.process.stderr?.off('data', streamEventListeners.onStderr);
-      processInfo.process.off('close', streamEventListeners.onClose);
-      processInfo.process.off('error', streamEventListeners.onError);
-    }
+    cleanupEventListeners(processId, listeners);
 
     return {
       success: false,
       message: `Error connecting stream: ${error instanceof Error ? error.message : 'Unknown error'}`,
     };
   }
+}
+
+function createEventListeners(
+  send: (data: string, event?: string) => void,
+  controller: ReadableStreamDefaultController,
+): StreamEventListeners {
+  return {
+    onStdout: (data: Buffer) => {
+      send(data.toString());
+    },
+    onStderr: (data: Buffer) => {
+      send(`Error: ${data.toString()}`);
+    },
+    onClose: (code: number) => {
+      const closeMessage = `\nProcess exited with code ${code}\nEnded at: ${new Date().toISOString()}\n`;
+      send(closeMessage, 'close');
+      controller.close();
+    },
+    onError: (err: Error) => {
+      send(`\nProcess error: ${err.message}`, 'close');
+      controller.close();
+    },
+  };
+}
+
+function attachEventListeners(
+  process: ChildProcess,
+  listeners: StreamEventListeners,
+): void {
+  process.stdout?.on('data', listeners.onStdout);
+  process.stderr?.on('data', listeners.onStderr);
+  process.on('close', listeners.onClose);
+  process.on('error', listeners.onError);
+}
+
+function cleanupEventListeners(
+  processId: string,
+  listeners?: StreamEventListeners,
+): void {
+  if (!listeners) return;
+
+  const processInfo = activeProcesses.get(processId);
+  const process = processInfo?.process;
+
+  if (!process) return;
+
+  process.stdout?.off('data', listeners.onStdout);
+  process.stderr?.off('data', listeners.onStderr);
+  process.off('close', listeners.onClose);
+  process.off('error', listeners.onError);
 }
