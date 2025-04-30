@@ -1,3 +1,5 @@
+// Deprecated
+
 export default function createJsonParseStream() {
   let buffer = '';
   let openBraces = 0;

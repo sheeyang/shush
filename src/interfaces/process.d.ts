@@ -1,17 +1,19 @@
 import type { ChildProcess } from 'child_process';
+import { Readable } from 'stream';
 
 export type ProcessState = 'initialized' | 'running' | 'terminated';
 
-type ProcessEventListener = {
-  onStdout: (data: Buffer) => Promise<void>;
-  onStderr: (data: Buffer) => Promise<void>;
-  onClose: (code: number) => Promise<void>;
-  onError: (err: Error) => Promise<void>;
-};
+// type ProcessEventListener = {
+//   onStdout: (data: Buffer) => Promise<void>;
+//   onStderr: (data: Buffer) => Promise<void>;
+//   onClose: (code: number) => Promise<void>;
+//   onError: (err: Error) => Promise<void>;
+// };
 
 type ProcessInfoServer = {
   eventListeners?: ProcessEventListener;
   process: ChildProcess | null;
+  outputStream: Readable;
 };
 
 type ProcessInfoClient = {
@@ -28,9 +30,9 @@ type ProcessOutputInfo = {
   firstOutputTime: number;
 };
 
-type StreamEventListeners = {
-  onStdout: (data: Buffer) => void;
-  onStderr: (data: Buffer) => void;
-  onClose: (code: number) => void;
-  onError: (err: Error) => void;
-};
+// type StreamEventListeners = {
+//   onStdout: (data: Buffer) => void;
+//   onStderr: (data: Buffer) => void;
+//   onClose: (code: number) => void;
+//   onError: (err: Error) => void;
+// };

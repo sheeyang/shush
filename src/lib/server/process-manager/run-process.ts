@@ -1,8 +1,8 @@
 import prisma from '../db';
-import { updateDatabase } from './helpers/update-database';
 import activeProcesses from '../processes';
 import spawn from 'cross-spawn';
-import { cleanupProcess } from './helpers/cleanup-process';
+import { PassThrough } from 'stream';
+import { createDatabaseStream } from '../node-stream-transforms/create-database-stream';
 
 export async function runProcess(processId: string): Promise<void> {
   const processData = await prisma.processData.findUnique({
@@ -21,69 +21,35 @@ export async function runProcess(processId: string): Promise<void> {
   const command = processData.command;
   const args = JSON.parse(processData.args);
 
-  // Check if process already exists and clean it up first (rare)
-  const existingProcess = activeProcesses.get(processId);
-  if (existingProcess) {
-    await cleanupProcess(processId);
-  }
+  const outputStream = new PassThrough();
 
   const childProcess = spawn(command, args);
 
-  const processInfo = activeProcesses
-    .set(processId, {
-      process: childProcess,
-    })
-    .get(processId);
+  outputStream.write(
+    `Command: ${command} ${args.join(' ')}\nStarted at: ${new Date().toISOString()}\n\n`,
+  );
 
-  if (!processInfo?.process) {
-    throw new Error(`Failed to spawn process ${processId}`);
-  }
+  childProcess.stdout?.pipe(outputStream, { end: false });
+  childProcess.stderr?.pipe(outputStream, { end: false });
 
-  await updateDatabase(processId, {
-    appendOutput: `Command: ${command} ${args.join(' ')}\nStarted at: ${new Date().toISOString()}\n`,
-    state: 'running',
-  });
-
-  const onStdout = async (data: Buffer) => {
-    const output = data.toString();
-    await updateDatabase(processId, {
-      appendOutput: output,
-    });
-  };
-
-  const onStderr = async (data: Buffer) => {
-    const errorOutput = `Error: ${data.toString()}`;
-    await updateDatabase(processId, {
-      appendOutput: errorOutput,
-    });
-  };
-
-  const onClose = async (code: number) => {
+  childProcess.once('close', async (code: number) => {
     const closeMessage = `\nProcess exited with code ${code}\nEnded at: ${new Date().toISOString()}\n`;
 
-    await updateDatabase(processId, {
-      appendOutput: closeMessage,
-      state: 'terminated',
-    });
+    outputStream.write(closeMessage);
+    outputStream.end();
 
-    cleanupProcess(processId);
-  };
+    activeProcesses.delete(processId);
+  });
 
-  const onError = async (err: Error) => {
+  childProcess.once('error', async (err: Error) => {
     const errorMessage = `\nProcess error: ${err.message}`;
+    outputStream.write(errorMessage);
+  });
 
-    await updateDatabase(processId, {
-      appendOutput: errorMessage,
-      state: 'terminated',
-    });
+  activeProcesses.set(processId, {
+    process: childProcess,
+    outputStream,
+  });
 
-    cleanupProcess(processId);
-  };
-
-  processInfo.eventListeners = { onStdout, onStderr, onClose, onError };
-
-  processInfo.process.stdout?.on('data', onStdout);
-  processInfo.process.stderr?.on('data', onStderr);
-  processInfo.process.on('close', onClose);
-  processInfo.process.on('error', onError);
+  outputStream.pipe(createDatabaseStream(processId));
 }

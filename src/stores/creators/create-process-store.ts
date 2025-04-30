@@ -11,9 +11,10 @@ import {
 } from '../../actions/process-actions';
 import { ProcessInfoClient } from '@/interfaces/process';
 import { useShallow } from 'zustand/shallow';
-import { devtools, persist } from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 import { StateCreator } from 'zustand';
-import createJsonParseStream from '@/lib/create-json-parse-stream';
+import { createMsgpackToObjectStream } from '@/lib/web-stream-transforms/create-msgpack-to-object-stream';
+// import { createDebugStream } from '@/lib/web-stream-transforms/create-debug-stream';
 
 type ProcessStoreActions = {
   initializeStore: () => Promise<void>;
@@ -33,19 +34,23 @@ type ProcessStore = {
   actions: ProcessStoreActions;
 };
 
+// const middlewares = (
+//   f: StateCreator<ProcessStore, [['zustand/immer', never]], []>,
+// ) =>
+//   devtools(
+//     immer(
+//       persist(f, {
+//         name: 'processes',
+//         partialize: (state) => ({
+//           processes: state.processes,
+//         }),
+//       }),
+//     ),
+//   );
+
 const middlewares = (
   f: StateCreator<ProcessStore, [['zustand/immer', never]], []>,
-) =>
-  devtools(
-    immer(
-      persist(f, {
-        name: 'processes',
-        partialize: (state) => ({
-          processes: state.processes,
-        }),
-      }),
-    ),
-  );
+) => devtools(immer(f));
 
 export const createProcessStore = () => {
   const useStore = create<ProcessStore>()(
@@ -136,7 +141,9 @@ export const createProcessStore = () => {
             });
 
             await response.body
-              .pipeThrough(createJsonParseStream())
+              // .pipeThrough(createDebugStream('Before'))
+              .pipeThrough(createMsgpackToObjectStream())
+              // .pipeThrough(createDebugStream('After'))
               .pipeTo(writableStream);
           } catch (error) {
             console.error('Error reading process stream:', error);

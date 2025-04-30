@@ -1,7 +1,5 @@
 import activeProcesses from '../processes';
 import spawn from 'cross-spawn';
-import { cleanupProcess } from './helpers/cleanup-process';
-import { updateDatabase } from './helpers/update-database';
 
 export async function killProcess(processId: string): Promise<void> {
   const processInfo = activeProcesses.get(processId);
@@ -20,7 +18,4 @@ export async function killProcess(processId: string): Promise<void> {
   } else {
     processInfo.process.kill();
   }
-
-  await cleanupProcess(processId);
-  await updateDatabase(processId, { state: 'terminated' });
 }

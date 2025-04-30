@@ -22,7 +22,7 @@ export async function GET(
 
   const { processId } = await params;
 
-  const response = await connectProcessStream(processId);
+  const response = connectProcessStream(processId);
 
   if (!response.success) {
     return new Response(response.message, { status: 404 });
