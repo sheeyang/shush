@@ -1,7 +1,7 @@
 import { Readable } from 'stream';
 import activeProcesses from '../processes';
-import { createObjectToMsgpackStream } from '../node-stream-transforms/create-object-to-msgpack-stream';
 import { createChunkToObjectStream } from '../node-stream-transforms/create-chunk-to-object-stream';
+import { PackrStream } from 'msgpackr';
 
 type ProcessStreamResult =
   | { success: true; stream: ReadableStream }
@@ -17,7 +17,7 @@ export function connectProcessStream(processId: string): ProcessStreamResult {
 
   const readable = outputStream
     .pipe(createChunkToObjectStream(processId))
-    .pipe(createObjectToMsgpackStream());
+    .pipe(new PackrStream());
 
   return { success: true, stream: nodeReadableToWebReadable(readable) };
 }
