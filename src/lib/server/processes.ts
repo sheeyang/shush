@@ -1,19 +1,19 @@
 import 'server-only';
-
 import { ProcessInfoServer } from '@/interfaces/process';
 
-const activeProcessesSingleton = () => {
-  return new Map<string, ProcessInfoServer>();
-};
-
+// Declare the global type
 declare const globalThis: {
-  activeProcessesGlobal: ReturnType<typeof activeProcessesSingleton>;
+  activeProcessesGlobal: Map<string, ProcessInfoServer>;
 } & typeof global;
 
-const activeProcesses =
-  globalThis.activeProcessesGlobal ?? activeProcessesSingleton();
+const activeProcessesSingleton = () => {
+  if (typeof globalThis.activeProcessesGlobal === 'undefined') {
+    globalThis.activeProcessesGlobal = new Map<string, ProcessInfoServer>();
+  }
+  return globalThis.activeProcessesGlobal;
+};
 
-export default activeProcesses;
+// Initialize the singleton instance
+const activeProcessesInstance = activeProcessesSingleton();
 
-if (process.env.NODE_ENV !== 'production')
-  globalThis.activeProcessesGlobal = activeProcesses;
+export default activeProcessesInstance;

@@ -7,10 +7,18 @@ type ProcessStreamResult =
   | { success: false; message: string };
 
 export function connectProcessStream(processId: string): ProcessStreamResult {
+  console.log(`Connecting to process ${processId}`);
+  console.log('From connect: ', activeProcesses);
+
   const processInfo = activeProcesses.get(processId);
   if (!processInfo) {
+    console.log(`Process ${processId} not found`);
+
     return { success: false, message: `Process ${processId} not found` };
   }
+
+  console.log(`Process ${processId} found, connecting to stream`);
+  console.log(processInfo);
 
   return {
     success: true,

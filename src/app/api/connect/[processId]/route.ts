@@ -43,8 +43,9 @@ export async function GET(
 
   return new Response(response.stream, {
     headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Content-Type': 'application/x-msgpack',
+      'Transfer-Encoding': 'chunked',
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
       Connection: 'keep-alive',
     },
   });
