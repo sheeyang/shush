@@ -9,12 +9,12 @@ import {
   removeProcessAction,
   runProcessAction,
 } from '../../actions/process-actions';
-import { ProcessInfoClient } from '@/interfaces/process';
+import { ProcessEvent, ProcessInfoClient } from '@/interfaces/process';
 import { useShallow } from 'zustand/shallow';
 import { devtools } from 'zustand/middleware';
 import { StateCreator } from 'zustand';
-import { createMsgpackToObjectStream } from '@/lib/web-stream-transforms/create-msgpack-to-object-stream';
-// import { createDebugStream } from '@/lib/web-stream-transforms/create-debug-stream';
+import { UnpackrStream } from '@/lib/web-stream-transforms/unpackr-stream';
+import { DebugStream } from '@/lib/web-stream-transforms/debug-stream';
 
 type ProcessStoreActions = {
   initializeStore: () => Promise<void>;
@@ -127,23 +127,23 @@ export const createProcessStore = () => {
             }
 
             const writableStream = new WritableStream({
-              write(chunk) {
+              write(chunk: ProcessEvent) {
                 set((state) => {
-                  if (chunk.event === 'close') {
-                    state.processes[processId].processState = 'terminated';
+                  if (chunk.event === 'state') {
+                    state.processes[processId].processState = chunk.state;
                     state.processes[processId].isConnectingStream = false;
                   }
-                  if (chunk.data) {
-                    state.processes[processId].output += chunk.data;
+                  if (chunk.event === 'output') {
+                    state.processes[processId].output += chunk.output;
                   }
                 });
               },
             });
 
             await response.body
-              // .pipeThrough(createDebugStream('Before'))
-              .pipeThrough(createMsgpackToObjectStream())
-              // .pipeThrough(createDebugStream('After'))
+              .pipeThrough(new DebugStream('Before'))
+              .pipeThrough(new UnpackrStream())
+              .pipeThrough(new DebugStream('After'))
               .pipeTo(writableStream);
           } catch (error) {
             console.error('Error reading process stream:', error);

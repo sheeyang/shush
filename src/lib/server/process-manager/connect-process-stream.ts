@@ -1,6 +1,5 @@
 import { Readable } from 'stream';
 import activeProcesses from '../processes';
-import { createChunkToObjectStream } from '../node-stream-transforms/create-chunk-to-object-stream';
 import { PackrStream } from 'msgpackr';
 
 type ProcessStreamResult =
@@ -13,13 +12,12 @@ export function connectProcessStream(processId: string): ProcessStreamResult {
     return { success: false, message: `Process ${processId} not found` };
   }
 
-  const { outputStream } = processInfo;
-
-  const readable = outputStream
-    .pipe(createChunkToObjectStream(processId))
-    .pipe(new PackrStream());
-
-  return { success: true, stream: nodeReadableToWebReadable(readable) };
+  return {
+    success: true,
+    stream: nodeReadableToWebReadable(
+      processInfo.eventStream.pipe(new PackrStream()),
+    ),
+  };
 }
 
 export function nodeReadableToWebReadable(nodeStream: Readable) {
