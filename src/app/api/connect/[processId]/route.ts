@@ -14,10 +14,15 @@ export async function GET(
   });
 
   if (!session) {
-    return {
-      success: false,
-      message: 'Unauthorized',
-    } as const;
+    return new Response(
+      JSON.stringify({ success: false, message: 'Unauthorized' }),
+      {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
   }
 
   const { processId } = await params;
@@ -25,7 +30,15 @@ export async function GET(
   const response = connectProcessStream(processId);
 
   if (!response.success) {
-    return new Response(response.message, { status: 404 });
+    return new Response(
+      JSON.stringify({ success: false, message: response.message }),
+      {
+        status: 404,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      },
+    );
   }
 
   return new Response(response.stream, {
