@@ -25,6 +25,11 @@ export async function runProcess(processId: string): Promise<void> {
 
   const childProcess = spawn(command, args);
 
+  await prisma.processData.update({
+    where: { id: processId },
+    data: { processState: 'running' },
+  });
+
   outputStream.write(
     `Command: ${command} ${args.join(' ')}\nStarted at: ${new Date().toISOString()}\n\n`,
   );
@@ -37,6 +42,11 @@ export async function runProcess(processId: string): Promise<void> {
 
     outputStream.write(closeMessage);
     outputStream.end();
+
+    await prisma.processData.update({
+      where: { id: processId },
+      data: { processState: 'terminated' },
+    });
 
     activeProcesses.delete(processId);
   });

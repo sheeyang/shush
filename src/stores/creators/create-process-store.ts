@@ -134,13 +134,15 @@ export const createProcessStore = () => {
 
             response.body
               .pipeThrough(new TextDecoderStream())
-              .pipeTo(writableStream);
+              .pipeTo(writableStream)
+              .then(() => {
+                set((state) => {
+                  state.processes[processId].processState = 'terminated';
+                  state.processes[processId].isConnectingStream = false;
+                });
+              });
           } catch (error) {
             console.error('Error reading process stream:', error);
-          } finally {
-            set((state) => {
-              state.processes[processId].isConnectingStream = false;
-            });
           }
         },
       },

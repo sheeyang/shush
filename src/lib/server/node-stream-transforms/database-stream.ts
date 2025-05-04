@@ -31,21 +31,4 @@ export class DatabaseStream extends Transform {
       }
     }
   }
-
-  override async _flush(callback: TransformCallback) {
-    try {
-      await prisma.processData.update({
-        where: { id: this.processId },
-        data: {
-          processState: 'terminated',
-        },
-      });
-      callback();
-    } catch (err) {
-      if (err instanceof Error) {
-        console.error(`Error updating process state ${this.processId}:`, err);
-        callback(err instanceof Error ? err : new Error(String(err)));
-      }
-    }
-  }
 }
