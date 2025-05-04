@@ -23,7 +23,7 @@ export default function CommandCard({ processId }: { processId: string }) {
   const [isDeleting, startTransition] = useTransition();
 
   useEffect(() => {
-    if (processState !== 'initialized') {
+    if (processState === 'running') {
       connectProcessStream(processId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
