@@ -9,45 +9,43 @@ export class DatabaseStream extends Transform {
     this.processId = processId;
   }
 
-  override _transform(
+  override async _transform(
     chunk: Buffer,
     _encoding: BufferEncoding,
     callback: TransformCallback,
   ) {
     const output = chunk.toString();
 
-    prisma.processOutput
-      .create({
+    try {
+      await prisma.processOutput.create({
         data: {
           data: output,
           processDataId: this.processId,
         },
-      })
-      .then(() => {
-        this.push(chunk);
-        callback();
-      })
-      .catch((err) => {
-        console.error(
-          `Error writing output for process ${this.processId}:`,
-          err,
-        );
-        callback(err);
       });
+      callback(null, chunk);
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error(`Error updating process state ${this.processId}:`, err);
+        callback(err instanceof Error ? err : new Error(String(err)));
+      }
+    }
   }
 
-  override _flush(callback: TransformCallback) {
-    prisma.processData
-      .update({
+  override async _flush(callback: TransformCallback) {
+    try {
+      await prisma.processData.update({
         where: { id: this.processId },
         data: {
           processState: 'terminated',
         },
-      })
-      .then(() => callback())
-      .catch((err) => {
-        console.error(`Error updating process state ${this.processId}:`, err);
-        callback(err);
       });
+      callback();
+    } catch (err) {
+      if (err instanceof Error) {
+        console.error(`Error updating process state ${this.processId}:`, err);
+        callback(err instanceof Error ? err : new Error(String(err)));
+      }
+    }
   }
 }
