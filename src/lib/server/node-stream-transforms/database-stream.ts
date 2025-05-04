@@ -1,26 +1,26 @@
 import { Transform, TransformCallback } from 'stream';
 import prisma from '../db';
+import { ProcessOutputInfoServer } from '@/interfaces/process';
 
 export class DatabaseStream extends Transform {
   private processId: string;
 
   constructor(processId: string) {
-    super();
+    super({ objectMode: true });
     this.processId = processId;
   }
 
   override async _transform(
-    chunk: Buffer,
+    chunk: ProcessOutputInfoServer,
     _encoding: BufferEncoding,
     callback: TransformCallback,
   ) {
-    const output = chunk.toString();
-
     try {
       await prisma.processOutput.create({
         data: {
-          data: output,
           processDataId: this.processId,
+          data: chunk.output,
+          createdAt: chunk.createdAt,
         },
       });
       callback(null, chunk);

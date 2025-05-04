@@ -3,6 +3,7 @@ import activeProcesses from '../processes';
 import spawn from 'cross-spawn';
 import { PassThrough } from 'stream';
 import { DatabaseStream } from '../node-stream-transforms/database-stream';
+import { FormatOutputTransform } from '../node-stream-transforms/format-output-stream';
 
 export async function runProcess(processId: string): Promise<void> {
   const processData = await prisma.processData.findUnique({
@@ -22,6 +23,9 @@ export async function runProcess(processId: string): Promise<void> {
   const args = JSON.parse(processData.args);
 
   const outputStream = new PassThrough();
+  const eventStream = outputStream
+    .pipe(new FormatOutputTransform())
+    .pipe(new DatabaseStream(processId));
 
   const childProcess = spawn(command, args);
 
@@ -58,6 +62,6 @@ export async function runProcess(processId: string): Promise<void> {
 
   activeProcesses.set(processId, {
     process: childProcess,
-    eventStream: outputStream.pipe(new DatabaseStream(processId)),
+    eventStream: eventStream,
   });
 }

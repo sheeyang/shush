@@ -79,6 +79,7 @@ export const createProcessStore = () => {
               processState: 'initialized',
               output: '',
               isConnectingStream: false,
+              lastOutputTime: 0,
             };
           });
         },
@@ -119,7 +120,17 @@ export const createProcessStore = () => {
           });
 
           try {
-            const response = await fetch(`/api/connect/${processId}`);
+            const lastOutputTime = currentProcess?.lastOutputTime || 0;
+            const url = new URL(
+              `/api/connect/${processId}`,
+              window.location.origin,
+            );
+            url.searchParams.append(
+              'lastOutputTime',
+              lastOutputTime.toString(),
+            );
+
+            const response = await fetch(url.toString());
             if (!response.body) {
               throw new Error('No response body available');
             }
@@ -128,6 +139,7 @@ export const createProcessStore = () => {
               write(chunk) {
                 set((state) => {
                   state.processes[processId].output += chunk;
+                  state.processes[processId].lastOutputTime = Date.now();
                 });
               },
             });

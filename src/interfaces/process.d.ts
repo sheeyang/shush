@@ -14,18 +14,10 @@ type ProcessInfoClient = {
   processState: ProcessState;
   output: string;
   isConnectingStream: boolean;
+  lastOutputTime: number;
 };
 
-type ProcessOutputEvent = {
-  event: 'output';
-  processId: string;
+type ProcessOutputInfoServer = {
   output: string;
+  createdAt: Date;
 };
-
-type ProcessStateEvent = {
-  event: 'state';
-  processId: string;
-  state: ProcessState;
-};
-
-type ProcessEvent = ProcessOutputEvent | ProcessStateEvent;

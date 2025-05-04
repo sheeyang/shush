@@ -27,7 +27,16 @@ export async function GET(
 
   const { processId } = await params;
 
-  const response = connectProcessStream(processId);
+  // Get lastOutputTime from query parameters
+  const lastOutputTimeParam =
+    request.nextUrl.searchParams.get('lastOutputTime');
+
+  // Convert the timestamp to a Date object, or use a fallback (epoch start)
+  const lastOutputTime = lastOutputTimeParam
+    ? new Date(parseInt(lastOutputTimeParam, 10))
+    : new Date(0);
+
+  const response = connectProcessStream(processId, lastOutputTime);
 
   if (!response.success) {
     return new NextResponse(
