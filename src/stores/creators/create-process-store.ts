@@ -9,12 +9,10 @@ import {
   removeProcessAction,
   runProcessAction,
 } from '../../actions/process-actions';
-import { ProcessEvent, ProcessInfoClient } from '@/interfaces/process';
+import { ProcessInfoClient } from '@/interfaces/process';
 import { useShallow } from 'zustand/shallow';
 import { devtools } from 'zustand/middleware';
 import { StateCreator } from 'zustand';
-import { UnpackrStream } from '@/lib/web-stream-transforms/unpackr-stream';
-import { DebugStream } from '@/lib/web-stream-transforms/debug-stream';
 
 type ProcessStoreActions = {
   initializeStore: () => Promise<void>;
@@ -127,23 +125,15 @@ export const createProcessStore = () => {
             }
 
             const writableStream = new WritableStream({
-              write(chunk: ProcessEvent) {
+              write(chunk) {
                 set((state) => {
-                  if (chunk.event === 'state') {
-                    state.processes[processId].processState = chunk.state;
-                    state.processes[processId].isConnectingStream = false;
-                  }
-                  if (chunk.event === 'output') {
-                    state.processes[processId].output += chunk.output;
-                  }
+                  state.processes[processId].output += chunk;
                 });
               },
             });
 
             response.body
-              .pipeThrough(new DebugStream('Before'))
-              .pipeThrough(new UnpackrStream())
-              .pipeThrough(new DebugStream('After'))
+              .pipeThrough(new TextDecoderStream())
               .pipeTo(writableStream);
           } catch (error) {
             console.error('Error reading process stream:', error);

@@ -1,6 +1,5 @@
 import { Readable } from 'stream';
 import activeProcesses from '../processes';
-import { PackrStream } from 'msgpackr';
 
 type ProcessStreamResult =
   | { success: true; stream: Readable }
@@ -14,6 +13,6 @@ export function connectProcessStream(processId: string): ProcessStreamResult {
 
   return {
     success: true,
-    stream: processInfo.eventStream.pipe(new PackrStream()),
+    stream: processInfo.eventStream,
   };
 }
