@@ -1,22 +1,24 @@
-import prisma from '../../db';
+// // TODO: not in use
 
-export async function sendHistoricalOutput(
-  processId: string,
-  send: (data: string, event?: string) => void,
-): Promise<void> {
-  const processData = await prisma.processData.findUnique({
-    where: { id: processId },
-    select: {
-      processState: true,
-      output: {
-        orderBy: { createdAt: 'asc' },
-      },
-    },
-  });
+// import prisma from '../../db';
 
-  if (!processData) return;
+// export async function sendHistoricalOutput(
+//   processId: string,
+//   send: (data: string, event?: string) => void,
+// ): Promise<void> {
+//   const processData = await prisma.processData.findUnique({
+//     where: { id: processId },
+//     select: {
+//       processState: true,
+//       output: {
+//         orderBy: { createdAt: 'asc' },
+//       },
+//     },
+//   });
 
-  processData.output.forEach((outputRecord) => {
-    send(outputRecord.data);
-  });
-}
+//   if (!processData) return;
+
+//   processData.output.forEach((outputRecord) => {
+//     send(outputRecord.data);
+//   });
+// }

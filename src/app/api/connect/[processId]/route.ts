@@ -3,7 +3,7 @@ import 'server-only';
 import { auth } from '@/lib/server/auth';
 import { connectProcessStream } from '@/lib/server/process-manager/connect-process-stream';
 import { headers } from 'next/headers';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 export async function GET(
   request: NextRequest,
@@ -14,7 +14,7 @@ export async function GET(
   });
 
   if (!session) {
-    return new Response(
+    return new NextResponse(
       JSON.stringify({ success: false, message: 'Unauthorized' }),
       {
         status: 401,
@@ -30,7 +30,7 @@ export async function GET(
   const response = connectProcessStream(processId);
 
   if (!response.success) {
-    return new Response(
+    return new NextResponse(
       JSON.stringify({ success: false, message: response.message }),
       {
         status: 404,
@@ -41,7 +41,8 @@ export async function GET(
     );
   }
 
-  return new Response(response.stream, {
+  // Next will automatically convert the node Readable to a web ReadableStream
+  return new NextResponse(response.stream as unknown as ReadableStream, {
     headers: {
       'Content-Type': 'application/x-msgpack',
       'Transfer-Encoding': 'chunked',

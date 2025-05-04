@@ -140,7 +140,7 @@ export const createProcessStore = () => {
               },
             });
 
-            await response.body
+            response.body
               .pipeThrough(new DebugStream('Before'))
               .pipeThrough(new UnpackrStream())
               .pipeThrough(new DebugStream('After'))

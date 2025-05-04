@@ -18,7 +18,5 @@ export async function addProcess(
     },
   });
 
-  console.log(`Process ${processId} added to database.`);
-
   return processId;
 }
