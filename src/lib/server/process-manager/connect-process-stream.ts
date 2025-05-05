@@ -4,14 +4,10 @@ import activeProcesses from '../processes';
 import { FormatOutputReverseTransform } from '../node-stream-transforms/format-output-reverse-stream';
 import { getHistoricalOutput } from './helpers/get-historical-output';
 
-type ProcessStreamResult =
-  | { success: true; stream: Readable }
-  | { success: false; message: string };
-
 export async function connectProcessStream(
   processId: string,
   lastOutputTime: Date,
-): Promise<ProcessStreamResult> {
+): Promise<Readable> {
   // Make a "copy" of eventStream because we don't want to destroy
   // processInfo.eventStream when connection to the client its lost
   const eventStream = new PassThrough({ objectMode: true });
@@ -29,7 +25,7 @@ export async function connectProcessStream(
   if (!processInfo) {
     // This could happen if the process is already finished before connecting
     outputStream.end();
-    return { success: true, stream: outputStream };
+    return outputStream;
   }
 
   // Use pipe here instead of pipeline because pipeline will automatically
@@ -48,8 +44,5 @@ export async function connectProcessStream(
     );
   });
 
-  return {
-    success: true,
-    stream: outputStream,
-  };
+  return outputStream;
 }
