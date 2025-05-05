@@ -1,5 +1,4 @@
 import activeProcesses from '../processes';
-import spawn from 'cross-spawn';
 
 export async function killProcess(processId: string): Promise<void> {
   const processInfo = activeProcesses.get(processId);
@@ -12,10 +11,5 @@ export async function killProcess(processId: string): Promise<void> {
     throw new Error(`Process ${processId} is not running`);
   }
 
-  // Kill the process using appropriate method
-  if (processInfo.process.pid) {
-    spawn('taskkill', ['/pid', processInfo.process.pid.toString(), '/f', '/t']);
-  } else {
-    processInfo.process.kill();
-  }
+  processInfo.process.kill();
 }

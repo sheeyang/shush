@@ -56,19 +56,29 @@ export async function runProcess(processId: string): Promise<void> {
       pipeline(childProcess.stderr, outputStream, { end: false });
     }
 
-    childProcess.once('close', async (code: number) => {
-      const closeMessage = `\nProcess exited with code ${code}\nEnded at: ${new Date().toISOString()}\n`;
+    childProcess.once(
+      'close',
+      async (code: number | null, signal: NodeJS.Signals | null) => {
+        let closeMessage = '\nProcess exited';
+        if (signal !== null) {
+          closeMessage += ` with signal: ${signal}`;
+        }
+        if (code !== null) {
+          closeMessage += ` with code: ${code}`;
+        }
+        closeMessage += `\nEnded at: ${new Date().toISOString()}\n`;
 
-      outputStream.write(closeMessage);
-      outputStream.end();
+        outputStream.write(closeMessage);
+        outputStream.end();
 
-      await prisma.processData.update({
-        where: { id: processId },
-        data: { processState: 'terminated' },
-      });
+        await prisma.processData.update({
+          where: { id: processId },
+          data: { processState: 'terminated' },
+        });
 
-      activeProcesses.delete(processId);
-    });
+        activeProcesses.delete(processId);
+      },
+    );
 
     childProcess.once('error', async (err: Error) => {
       const errorMessage = `\nProcess error: ${err.message}`;
