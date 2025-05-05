@@ -1,6 +1,8 @@
 import { ProcessOutputInfoServer } from '@/interfaces/process';
 import { Transform, TransformCallback } from 'stream';
 
+// TODO: this may not be needed anymore
+
 /**
  * Transform stream that filters out any output chunks created before the specified lastOutputTime
  */
@@ -24,6 +26,8 @@ export class TimestampFilterStream extends Transform {
       if (chunk.createdAt > this.lastOutputTime) {
         callback(null, chunk);
       } else {
+        console.log('skipping', chunk);
+
         // Skip this chunk
         callback();
       }

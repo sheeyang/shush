@@ -2,7 +2,6 @@ import { Readable, PassThrough } from 'stream';
 import { pipeline } from 'stream/promises';
 import activeProcesses from '../processes';
 import { FormatOutputReverseTransform } from '../node-stream-transforms/format-output-reverse-stream';
-import { TimestampFilterStream } from '../node-stream-transforms/timestamp-filter-stream';
 import { getHistoricalOutput } from './helpers/get-historical-output';
 
 type ProcessStreamResult =
@@ -38,7 +37,7 @@ export async function connectProcessStream(
 
   pipeline(
     eventStream,
-    new TimestampFilterStream(lastOutputTime),
+    // new TimestampFilterStream(lastOutputTime), // TODO: this may not be needed anymore
     new FormatOutputReverseTransform(),
     outputStream,
   ).catch((err) => {
