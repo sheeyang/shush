@@ -36,7 +36,7 @@ export async function GET(
     ? new Date(parseInt(lastOutputTimeParam, 10))
     : new Date(0);
 
-  const response = connectProcessStream(processId, lastOutputTime);
+  const response = await connectProcessStream(processId, lastOutputTime);
 
   if (!response.success) {
     return new NextResponse(

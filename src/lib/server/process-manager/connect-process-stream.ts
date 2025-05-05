@@ -3,15 +3,16 @@ import { pipeline } from 'stream/promises';
 import activeProcesses from '../processes';
 import { FormatOutputReverseTransform } from '../node-stream-transforms/format-output-reverse-stream';
 import { TimestampFilterStream } from '../node-stream-transforms/timestamp-filter-stream';
+import { getHistoricalOutput } from './helpers/get-historical-output';
 
 type ProcessStreamResult =
   | { success: true; stream: Readable }
   | { success: false; message: string };
 
-export function connectProcessStream(
+export async function connectProcessStream(
   processId: string,
   lastOutputTime: Date,
-): ProcessStreamResult {
+): Promise<ProcessStreamResult> {
   const processInfo = activeProcesses.get(processId);
   if (!processInfo) {
     // This could happen if the process is finished before connecting
@@ -39,6 +40,9 @@ export function connectProcessStream(
       err,
     );
   });
+
+  const unsent = await getHistoricalOutput(processId, lastOutputTime);
+  stream.write(unsent);
 
   return {
     success: true,

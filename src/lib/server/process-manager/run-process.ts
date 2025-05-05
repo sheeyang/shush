@@ -30,8 +30,11 @@ export async function runProcess(processId: string): Promise<void> {
     pipeline(
       outputStream,
       new FormatOutputTransform(),
-      new DatabaseStream(processId),
+      // eventStream before DatabaseStream so that chunks won't pile, but this means
+      // historical output will not be stored in the stream, which is good for memory but
+      // we need another way to send historical output to the client
       eventStream,
+      new DatabaseStream(processId),
     );
 
     const childProcess = spawn(command, args);

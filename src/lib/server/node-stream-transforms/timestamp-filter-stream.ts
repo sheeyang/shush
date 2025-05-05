@@ -18,6 +18,8 @@ export class TimestampFilterStream extends Transform {
     callback: TransformCallback,
   ) {
     try {
+      // console.log({ chunk });
+
       // Only pass through chunks that are newer than the lastOutputTime
       if (chunk.createdAt > this.lastOutputTime) {
         callback(null, chunk);
