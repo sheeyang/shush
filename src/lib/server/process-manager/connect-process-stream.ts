@@ -12,12 +12,6 @@ export async function connectProcessStream(
   processId: string,
   lastOutputTime: Date,
 ): Promise<ProcessStreamResult> {
-  const processInfo = activeProcesses.get(processId);
-  if (!processInfo) {
-    // This could happen if the process is finished before connecting
-    return { success: false, message: `Process ${processId} not found` };
-  }
-
   // Make a "copy" of eventStream because we don't want to destroy
   // processInfo.eventStream when connection to the client its lost
   const eventStream = new PassThrough({ objectMode: true });
@@ -31,8 +25,15 @@ export async function connectProcessStream(
   });
   outputStream.write(unsent);
 
-  // Use pipe here instead of pipeline because we don't want
-  // processInfo.eventStream to end when eventStream ends
+  const processInfo = activeProcesses.get(processId);
+  if (!processInfo) {
+    // This could happen if the process is already finished before connecting
+    outputStream.end();
+    return { success: true, stream: outputStream };
+  }
+
+  // Use pipe here instead of pipeline because pipeline will automatically
+  // end processInfo.eventStream when eventStream ends (eg. when the client disconnects)
   processInfo.eventStream.pipe(eventStream);
 
   pipeline(
