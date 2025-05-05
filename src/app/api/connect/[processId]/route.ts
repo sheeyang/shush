@@ -53,10 +53,7 @@ export async function GET(
   // Next will automatically convert the node Readable to a web ReadableStream
   return new NextResponse(response.stream as unknown as ReadableStream, {
     headers: {
-      'Content-Type': 'application/x-msgpack',
-      'Transfer-Encoding': 'chunked',
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      Connection: 'keep-alive',
+      'Content-Type': 'text/plain; charset=utf-8',
     },
   });
 }
