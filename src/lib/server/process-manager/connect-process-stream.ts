@@ -41,7 +41,9 @@ export async function connectProcessStream(
     );
   });
 
-  const unsent = await getHistoricalOutput(processId, lastOutputTime);
+  const unsent = await getHistoricalOutput(processId, {
+    after: lastOutputTime,
+  });
   stream.write(unsent);
 
   return {
