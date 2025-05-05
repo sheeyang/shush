@@ -30,7 +30,7 @@ export async function runProcess(processId: string): Promise<void> {
     pipeline(
       outputStream,
       new FormatOutputTransform(),
-      // eventStream before DatabaseStream so that chunks won't pile, but this means
+      // eventStream before DatabaseStream so that chunks won't pile up, but this means
       // historical output will not be stored in the stream, which is good for memory but
       // we need another way to send historical output to the client
       eventStream,
@@ -48,7 +48,6 @@ export async function runProcess(processId: string): Promise<void> {
       `Command: ${command} ${args.join(' ')}\nStarted at: ${new Date().toISOString()}\n\n`,
     );
 
-    // Use pipeline for stdout and stderr
     if (childProcess.stdout) {
       pipeline(childProcess.stdout, outputStream, { end: false });
     }

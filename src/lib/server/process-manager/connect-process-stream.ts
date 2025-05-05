@@ -19,21 +19,28 @@ export async function connectProcessStream(
     return { success: false, message: `Process ${processId} not found` };
   }
 
-  // make a "copy" of eventStream because we don't want to destroy
-  // it when connection to the client its lost
+  // Make a "copy" of eventStream because we don't want to destroy
+  // processInfo.eventStream when connection to the client its lost
+  const eventStream = new PassThrough({ objectMode: true });
+  // Turn eventStream back into outputStream (string stream) to be sent to the client
+  const outputStream = new PassThrough({ writableObjectMode: true });
+
+  // Get data that might have been lost due to race conditions
+  // This should runs before new outputs are sent to the "copied" eventStream
+  const unsent = await getHistoricalOutput(processId, {
+    after: lastOutputTime,
+  });
+  outputStream.write(unsent);
+
   // Use pipe here instead of pipeline because we don't want
   // processInfo.eventStream to end when eventStream ends
-  const eventStream = new PassThrough({ objectMode: true });
   processInfo.eventStream.pipe(eventStream);
-
-  // this is the stream that will be sent to the client
-  const stream = new PassThrough({ writableObjectMode: true });
 
   pipeline(
     eventStream,
     new TimestampFilterStream(lastOutputTime),
     new FormatOutputReverseTransform(),
-    stream,
+    outputStream,
   ).catch((err) => {
     console.error(
       `connectProcessStream: Stream pipeline error for process ${processId}:`,
@@ -41,13 +48,8 @@ export async function connectProcessStream(
     );
   });
 
-  const unsent = await getHistoricalOutput(processId, {
-    after: lastOutputTime,
-  });
-  stream.write(unsent);
-
   return {
     success: true,
-    stream,
+    stream: outputStream,
   };
 }
