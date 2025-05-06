@@ -16,11 +16,14 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { createAdminAccount } from '@/actions/create-admin-account';
-import { authClient } from '@/lib/auth-client';
+import { loginAction } from '@/lib/login-action';
+
+const initialState = {
+  message: '',
+};
 
 export default function Setup() {
   const [loading, setLoading] = useState(false);
-
   const router = useRouter();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -38,14 +41,20 @@ export default function Setup() {
 
       await createAdminAccount(username, password);
 
-      // Automatically sign in
-      await authClient.signIn.email({
-        email: `${username}@email.email`,
-        password,
-      });
+      // Create a new FormData for login
+      const loginFormData = new FormData();
+      loginFormData.append('email', `${username}@email.email`);
+      loginFormData.append('password', password);
 
-      toast.success(`User ${username} created successfully!`);
-      router.push('/');
+      // Use the loginAction
+      const result = await loginAction(initialState, loginFormData);
+
+      if (result.message === 'Login successful') {
+        toast.success(`User ${username} created successfully!`);
+        router.push('/');
+      } else {
+        throw new Error(result.message);
+      }
     } catch (error) {
       if (error instanceof Error) {
         toast.error(

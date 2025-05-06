@@ -2,8 +2,7 @@
 
 import 'server-only';
 
-import { auth } from '@/lib/server/auth';
-import { headers } from 'next/headers';
+import { getCurrentSession } from '@/lib/server/session';
 import { addProcess } from '@/lib/server/process-manager/add-process';
 import { runProcess } from '@/lib/server/process-manager/run-process';
 import { killProcess } from '@/lib/server/process-manager/kill-process';
@@ -15,9 +14,7 @@ export async function addProcessAction(
   args: string[],
   label: string,
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const { session } = await getCurrentSession();
 
   if (!session) {
     throw new Error('Unauthorized');
@@ -27,9 +24,7 @@ export async function addProcessAction(
 }
 
 export async function runProcessAction(processId: string) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const { session } = await getCurrentSession();
 
   if (!session) {
     throw new Error('Unauthorized');
@@ -39,9 +34,7 @@ export async function runProcessAction(processId: string) {
 }
 
 export async function killProcessAction(processId: string) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const { session } = await getCurrentSession();
 
   if (!session) {
     throw new Error('Unauthorized');
@@ -51,9 +44,7 @@ export async function killProcessAction(processId: string) {
 }
 
 export async function removeProcessAction(processId: string) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const { session } = await getCurrentSession();
 
   if (!session) {
     throw new Error('Unauthorized');
@@ -63,9 +54,7 @@ export async function removeProcessAction(processId: string) {
 }
 
 export async function getAllProcessesAction() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const { session } = await getCurrentSession();
 
   if (!session) {
     throw new Error('Unauthorized');

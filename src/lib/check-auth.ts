@@ -1,12 +1,9 @@
-import { headers } from 'next/headers';
-import { auth } from './server/auth';
 import { redirect } from 'next/navigation';
 import prisma from './server/db';
+import { getCurrentSession } from './server/session';
 
 export async function checkAuth() {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const { session } = await getCurrentSession();
 
   if (!session) {
     const existingAdmin = await prisma.user.findFirst({

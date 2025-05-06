@@ -1,17 +1,14 @@
 import 'server-only';
 
-import { auth } from '@/lib/server/auth';
+import { getCurrentSession } from '@/lib/server/session';
 import { connectProcessStream } from '@/lib/server/process-manager/connect-process-stream';
-import { headers } from 'next/headers';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ processId: string }> },
 ) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
-  });
+  const { session } = await getCurrentSession();
 
   if (!session) {
     return new NextResponse(

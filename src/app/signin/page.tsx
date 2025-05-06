@@ -13,10 +13,13 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { FormEvent, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import { authClient } from '@/lib/auth-client';
 import { useRouter } from 'next/navigation';
-import { ErrorContext } from 'better-auth/react';
 import { toast } from 'sonner';
+import { loginAction } from '@/lib/login-action';
+
+const initialState = {
+  message: '',
+};
 
 export default function SignIn() {
   const [loading, setLoading] = useState(false);
@@ -31,31 +34,27 @@ export default function SignIn() {
     const username = formData.get('username') as string;
     const password = formData.get('password') as string;
 
-    await authClient.signIn.email(
-      {
-        email: `${username}@email.email`,
-        password,
-        rememberMe,
-      },
-      {
-        onRequest: () => {
-          setLoading(true);
-        },
-        onResponse: () => {
-          setLoading(false);
-        },
-        onSuccess: () => {
-          router.push('/');
-        },
-        onError: (e: ErrorContext) => {
-          toast.error(
-            `Failed to sign in: ${e.error.message || 'Unknown error'}`,
-          );
-        },
-      },
-    );
+    // Create a new FormData for login
+    const loginFormData = new FormData();
+    loginFormData.append('email', `${username}@email.email`);
+    loginFormData.append('password', password);
 
-    setLoading(false);
+    try {
+      // Use the loginAction
+      const result = await loginAction(initialState, loginFormData);
+
+      if (result.message === 'Login successful') {
+        router.push('/');
+      } else {
+        toast.error(`Failed to sign in: ${result.message}`);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        toast.error(`Failed to sign in: ${error.message || 'Unknown error'}`);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
