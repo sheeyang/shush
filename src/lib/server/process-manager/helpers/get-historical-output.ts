@@ -1,10 +1,5 @@
 import prisma from '../../db';
 
-interface DateFilter {
-  gt?: Date;
-  lt?: Date;
-}
-
 interface HistoricalOutputOptions {
   after?: Date;
   before?: Date;
@@ -13,37 +8,30 @@ interface HistoricalOutputOptions {
 
 export async function getHistoricalOutput(
   processId: string,
-  options: HistoricalOutputOptions = {},
+  { after, before, limit }: HistoricalOutputOptions = {},
 ): Promise<string> {
-  const { after, before, limit } = options;
-
-  // Create properly typed date filter object
-  const dateFilter: DateFilter = {};
-
-  if (after) {
-    dateFilter.gt = after;
-  }
-
-  if (before) {
-    dateFilter.lt = before;
-  }
-
   const processData = await prisma.processData.findUnique({
-    where: { id: processId },
+    where: {
+      id: processId,
+    },
     select: {
       processState: true,
       output: {
         where: {
-          createdAt:
-            Object.keys(dateFilter).length > 0 ? dateFilter : undefined,
+          createdAt: {
+            ...(after && { gt: after }),
+            ...(before && { lt: before }),
+          },
         },
-        orderBy: { createdAt: 'asc' },
-        ...(limit !== undefined && { take: limit }),
+        orderBy: {
+          createdAt: 'asc',
+        },
+        ...(typeof limit === 'number' && { take: limit }),
       },
     },
   });
 
-  if (!processData) return '';
+  if (!processData || !processData.output?.length) return '';
 
   return processData.output.map((output) => output.data).join('');
 }
