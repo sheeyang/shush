@@ -1,5 +1,7 @@
 'use server';
 
+import 'server-only';
+
 import prisma from '../../db';
 import { createUser } from '../user';
 

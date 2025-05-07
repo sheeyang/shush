@@ -1,4 +1,5 @@
 import 'server-only';
+
 import { ProcessInfoServer } from '@/interfaces/process';
 
 // Declare the global type

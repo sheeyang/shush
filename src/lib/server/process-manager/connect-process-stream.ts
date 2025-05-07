@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { Readable, PassThrough } from 'stream';
 import { pipeline } from 'stream/promises';
 import activeProcesses from '../processes';

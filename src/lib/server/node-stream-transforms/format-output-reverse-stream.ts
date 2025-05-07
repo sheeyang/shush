@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { ProcessOutputInfoServer } from '@/interfaces/process';
 import { Transform, TransformCallback } from 'stream';
 

@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { Writable } from 'stream';
 import prisma from '../db';
 import { ProcessOutputInfoServer } from '@/interfaces/process';

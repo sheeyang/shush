@@ -1,5 +1,7 @@
 'use server';
 
+import 'server-only';
+
 import prisma from '@/lib/server/db';
 
 export async function fetchUsersAction() {

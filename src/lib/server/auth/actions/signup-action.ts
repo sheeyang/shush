@@ -2,6 +2,8 @@
 
 'use server';
 
+import 'server-only';
+
 import { verifyPasswordStrength } from '@/lib/server/auth/password';
 import { RefillingTokenBucket } from '@/lib/server/auth/rate-limit';
 import {

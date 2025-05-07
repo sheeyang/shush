@@ -1,5 +1,7 @@
 'use server';
 
+import 'server-only';
+
 import { getCurrentSession } from '@/lib/server/auth/session';
 
 import { globalPOSTRateLimit } from '@/lib/server/auth/request';

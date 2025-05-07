@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { User } from '@/generated/prisma';
 import prisma from '../db';
 import { hashPassword } from './password';

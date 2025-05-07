@@ -1,5 +1,7 @@
 'use server';
 
+import 'server-only';
+
 import { globalPOSTRateLimit } from '@/lib/server/auth/request';
 import {
   deleteSessionTokenCookie,

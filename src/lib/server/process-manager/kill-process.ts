@@ -1,3 +1,5 @@
+import 'server-only';
+
 import activeProcesses from '../processes';
 
 export async function killProcess(processId: string): Promise<void> {

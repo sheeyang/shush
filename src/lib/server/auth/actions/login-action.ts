@@ -1,5 +1,7 @@
 'use server';
 
+import 'server-only';
+
 import { verifyPasswordHash } from '@/lib/server/auth/password';
 import { RefillingTokenBucket, Throttler } from '@/lib/server/auth/rate-limit';
 import {

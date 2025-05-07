@@ -1,3 +1,5 @@
+import 'server-only';
+
 import { headers } from 'next/headers';
 import { RefillingTokenBucket } from './rate-limit';
 
