@@ -36,7 +36,7 @@ export default function SignIn() {
 
     // Create a new FormData for login
     const loginFormData = new FormData();
-    loginFormData.append('email', `${username}@email.email`);
+    loginFormData.append('username', username);
     loginFormData.append('password', password);
 
     try {
@@ -63,7 +63,7 @@ export default function SignIn() {
         <CardHeader>
           <CardTitle className='text-lg md:text-xl'>Sign In</CardTitle>
           <CardDescription className='text-xs md:text-sm'>
-            Enter your email below to login to your account
+            Enter your username below to login to your account
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -8,7 +8,7 @@ export async function fetchUsersAction() {
       take: 10,
       select: {
         id: true,
-        email: true,
+        username: true,
         role: true,
       },
     });

@@ -1,6 +1,5 @@
 'use server';
 
-import { verifyEmailInput } from '@/lib/server/auth/email';
 import { verifyPasswordHash } from '@/lib/server/auth/password';
 import { RefillingTokenBucket, Throttler } from '@/lib/server/auth/rate-limit';
 import {
@@ -8,7 +7,11 @@ import {
   generateSessionToken,
   setSessionTokenCookie,
 } from '@/lib/server/auth/session';
-import { getUserFromEmail, getUserPasswordHash } from '@/lib/server/auth/user';
+import {
+  getUserFromUsername,
+  getUserPasswordHash,
+  verifyUsernameInput,
+} from '@/lib/server/auth/user';
 import { headers } from 'next/headers';
 import { globalPOSTRateLimit } from '@/lib/server/auth/request';
 
@@ -32,24 +35,24 @@ export async function loginAction(
     };
   }
 
-  const email = formData.get('email');
+  const username = formData.get('username');
   const password = formData.get('password');
-  if (typeof email !== 'string' || typeof password !== 'string') {
+  if (typeof username !== 'string' || typeof password !== 'string') {
     return {
       message: 'Invalid or missing fields',
     };
   }
-  if (email === '' || password === '') {
+  if (username === '' || password === '') {
     return {
-      message: 'Please enter your email and password.',
+      message: 'Please enter your username and password.',
     };
   }
-  if (!verifyEmailInput(email)) {
+  if (!verifyUsernameInput(username)) {
     return {
-      message: 'Invalid email',
+      message: 'Invalid username',
     };
   }
-  const user = await getUserFromEmail(email);
+  const user = await getUserFromUsername(username);
   if (user === null) {
     return {
       message: 'Account does not exist',

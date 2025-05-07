@@ -21,8 +21,7 @@ export async function createUserAction(_prev: unknown, formData: FormData) {
 
   try {
     // Create the user with our custom function
-    const email = `${username}@email.email`;
-    const user = await createUser(email, username, password);
+    const user = await createUser(username, password);
 
     // Update the user role to 'user'
     await prisma.user.update({

@@ -1,23 +1,22 @@
+import { User } from '@/generated/prisma';
 import prisma from '../db';
 import { hashPassword } from './password';
 
-// TODO: should probably use this
-// export function verifyUsernameInput(username: string): boolean {
-//   return (
-//     username.length > 3 && username.length < 32 && username.trim() === username
-//   );
-// }
+export function verifyUsernameInput(username: string): boolean {
+  return (
+    username.length > 3 && username.length < 32 && username.trim() === username
+  );
+}
 
 export async function createUser(
-  email: string,
   username: string,
   password: string,
-): Promise<User> {
+): Promise<Pick<User, 'id' | 'username'>> {
   const passwordHash = await hashPassword(password);
 
   const user = await prisma.user.create({
     data: {
-      email,
+      username,
       passwordHash,
       role: 'user',
     },
@@ -25,7 +24,7 @@ export async function createUser(
 
   return {
     id: user.id,
-    email: user.email,
+    username: user.username,
   };
 }
 
@@ -40,14 +39,14 @@ export async function updateUserPassword(
   });
 }
 
-export async function updateUserEmail(
+export async function updateUserUsername(
   userId: number,
-  email: string,
+  username: string,
 ): Promise<void> {
   await prisma.user.update({
     where: { id: userId },
     data: {
-      email,
+      username,
     },
   });
 }
@@ -65,9 +64,11 @@ export async function getUserPasswordHash(userId: number): Promise<string> {
   return user.passwordHash;
 }
 
-export async function getUserFromEmail(email: string): Promise<User | null> {
+export async function getUserFromUsername(
+  username: string,
+): Promise<Pick<User, 'id' | 'username'> | null> {
   const user = await prisma.user.findUnique({
-    where: { email },
+    where: { username },
   });
 
   if (!user) {
@@ -76,11 +77,17 @@ export async function getUserFromEmail(email: string): Promise<User | null> {
 
   return {
     id: user.id,
-    email: user.email,
+    username: user.username,
   };
 }
 
-export interface User {
-  id: number;
-  email: string;
+export async function checkUsernameAvailability(
+  username: string,
+): Promise<boolean> {
+  const count = await prisma.user.count({
+    where: {
+      username: username,
+    },
+  });
+  return count === 0;
 }

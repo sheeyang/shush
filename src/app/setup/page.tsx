@@ -43,7 +43,7 @@ export default function Setup() {
 
       // Create a new FormData for login
       const loginFormData = new FormData();
-      loginFormData.append('email', `${username}@email.email`);
+      loginFormData.append('username', username);
       loginFormData.append('password', password);
 
       // Use the loginAction

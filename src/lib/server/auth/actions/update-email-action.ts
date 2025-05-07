@@ -1,14 +1,15 @@
 'use server';
 
 import { getCurrentSession } from '@/lib/server/auth/session';
-import {
-  checkEmailAvailability,
-  verifyEmailInput,
-} from '@/lib/server/auth/email';
-import { globalPOSTRateLimit } from '@/lib/server/auth/request';
-import { updateUserEmail } from '../user';
 
-export async function updateEmailAction(
+import { globalPOSTRateLimit } from '@/lib/server/auth/request';
+import {
+  checkUsernameAvailability,
+  updateUserUsername,
+  verifyUsernameInput,
+} from '../user';
+
+export async function updateUsernameAction(
   _prev: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -24,31 +25,31 @@ export async function updateEmailAction(
     };
   }
 
-  const email = formData.get('email');
-  if (typeof email !== 'string') {
+  const username = formData.get('username');
+  if (typeof username !== 'string') {
     return { message: 'Invalid or missing fields' };
   }
-  if (email === '') {
+  if (username === '') {
     return {
-      message: 'Please enter your email',
+      message: 'Please enter your username',
     };
   }
-  if (!verifyEmailInput(email)) {
+  if (!verifyUsernameInput(username)) {
     return {
-      message: 'Please enter a valid email',
+      message: 'Please enter a valid username',
     };
   }
-  const emailAvailable = await checkEmailAvailability(email);
-  if (!emailAvailable) {
+  const usernameAvailable = await checkUsernameAvailability(username);
+  if (!usernameAvailable) {
     return {
-      message: 'This email is already used',
+      message: 'This username is already used',
     };
   }
 
-  await updateUserEmail(user.id, email);
+  await updateUserUsername(user.id, username);
 
   return {
-    message: 'Email updated successfully',
+    message: 'Username updated successfully',
   };
 }
 

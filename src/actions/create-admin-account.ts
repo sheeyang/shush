@@ -16,10 +16,8 @@ export async function createAdminAccount(username: string, password: string) {
     throw new Error('Admin account already exists');
   }
 
-  const email = `${username}@email.email`;
-
   // Create the user with our custom function
-  const user = await createUser(email, username, password);
+  const user = await createUser(username, password);
 
   // Update the user role to admin
   await prisma.user.update({

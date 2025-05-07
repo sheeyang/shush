@@ -12,16 +12,13 @@ import {
 import { toast } from 'sonner';
 import { useState, useEffect } from 'react';
 import { fetchUsersAction } from '@/lib/server/auth/actions/fetch-users-action';
+import { User } from '@/generated/prisma';
 
 export default function ManageUsersCard() {
   const [pending, setPending] = useState(false);
-  const [users, setUsers] = useState<
-    {
-      id: number;
-      email: string;
-      role: string;
-    }[]
-  >([]);
+  const [users, setUsers] = useState<Pick<User, 'id' | 'username' | 'role'>[]>(
+    [],
+  );
 
   const loadUsers = async () => {
     setPending(true);
@@ -62,9 +59,9 @@ export default function ManageUsersCard() {
           users.map((user) => {
             return (
               <div key={user.id} className='border-b py-2'>
-                <Label className='font-medium'>{user.email}</Label>
+                <Label className='font-medium'>{user.username}</Label>
                 <div className='text-sm text-gray-500'>
-                  {user.email} • {user.role || 'user'}
+                  {user.username} • {user.role || 'user'}
                 </div>
               </div>
             );
