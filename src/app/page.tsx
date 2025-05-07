@@ -1,8 +1,8 @@
-import { checkAuth } from '@/lib/check-auth';
+import { redirectUnauthenticated } from '@/lib/redirect-unauthenticated';
 import { redirect } from 'next/navigation';
 
 export default async function Home() {
-  await checkAuth();
+  await redirectUnauthenticated();
 
   // Redirect to the ping page by default
   redirect('/ping');

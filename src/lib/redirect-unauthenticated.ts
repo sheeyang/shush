@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import prisma from './server/db';
 import { getCurrentSession } from './server/auth/session';
 
-export async function checkAuth() {
+export async function redirectUnauthenticated() {
   const { session } = await getCurrentSession();
 
   if (!session) {

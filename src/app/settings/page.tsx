@@ -1,9 +1,9 @@
 import AddUserCard from '@/components/settings/add-user-card';
 import ManageUsersCard from '@/components/settings/manage-users-card';
-import { checkAuth } from '@/lib/check-auth';
+import { redirectUnauthenticated } from '@/lib/redirect-unauthenticated';
 
 export default async function SettingsPage() {
-  await checkAuth();
+  await redirectUnauthenticated();
 
   return (
     <div className='container mx-auto py-10'>
