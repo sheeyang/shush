@@ -6,13 +6,14 @@ import { hashPassword } from './password';
 
 export function verifyUsernameInput(username: string): boolean {
   return (
-    username.length > 3 && username.length < 32 && username.trim() === username
+    username.length >= 3 && username.length < 32 && username.trim() === username
   );
 }
 
 export async function createUser(
   username: string,
   password: string,
+  role: string = 'user',
 ): Promise<Pick<User, 'id' | 'username'>> {
   const passwordHash = await hashPassword(password);
 
@@ -20,7 +21,7 @@ export async function createUser(
     data: {
       username,
       passwordHash,
-      role: 'user',
+      role,
     },
   });
 

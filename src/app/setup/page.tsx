@@ -14,46 +14,22 @@ import { Label } from '@/components/ui/label';
 import { FormEvent, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useRouter } from 'next/navigation';
-import { createAdminAccount } from '@/actions/create-admin-account';
-import { loginAction } from '@/lib/server/auth/actions/login-action';
-
-const initialState = {
-  message: '',
-};
+import { createAdminAction } from '@/lib/server/auth/actions/create-admin-action';
 
 export default function Setup() {
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setLoading(true);
 
     const formData = new FormData(event.currentTarget);
-    const username = formData.get('username') as string;
-    const password = formData.get('password') as string;
 
     try {
-      if (!username || !password) {
-        throw new Error('Username and password are required.');
-      }
+      const adminResult = await createAdminAction(null, formData);
 
-      await createAdminAccount(username, password);
-
-      // Create a new FormData for login
-      const loginFormData = new FormData();
-      loginFormData.append('username', username);
-      loginFormData.append('password', password);
-
-      // Use the loginAction
-      const result = await loginAction(initialState, loginFormData);
-
-      if (result.message === 'Login successful') {
-        toast.success(`User ${username} created successfully!`);
-        router.push('/');
-      } else {
-        throw new Error(result.message);
+      if (!adminResult.success) {
+        throw new Error(adminResult.message);
       }
     } catch (error) {
       if (error instanceof Error) {

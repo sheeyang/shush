@@ -5,14 +5,20 @@ import 'server-only';
 import { verifyPasswordStrength } from '@/lib/server/auth/password';
 import { RefillingTokenBucket } from '@/lib/server/auth/rate-limit';
 import {
+  createSession,
+  generateSessionToken,
+  setSessionTokenCookie,
+} from '@/lib/server/auth/session';
+import {
   checkUsernameAvailability,
   createUser,
   verifyUsernameInput,
 } from '@/lib/server/auth/user';
 import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import { globalPOSTRateLimit } from '@/lib/server/auth/request';
-import { getCurrentSession } from '../session';
-import { checkRole } from '../helpers';
+
+import prisma from '@/lib/server/db';
 
 type ActionResult = {
   success: boolean;
@@ -21,7 +27,8 @@ type ActionResult = {
 
 const ipBucket = new RefillingTokenBucket<string>(3, 10);
 
-export async function createUserAction(
+// THIS SHOULD ONLY BE USED FOR INITIAL SETUP BECAUSE THERE CAN ONLY BE ONE ADMIN
+export async function createAdminAction(
   _prev: unknown,
   formData: FormData,
 ): Promise<ActionResult> {
@@ -32,18 +39,16 @@ export async function createUserAction(
     };
   }
 
-  const { session } = await getCurrentSession();
-  if (session === null) {
-    return {
-      success: false,
-      message: 'Not authenticated',
-    };
-  }
+  const existingAdmin = await prisma.user.findFirst({
+    where: {
+      role: 'admin',
+    },
+  });
 
-  if (!(await checkRole(session, 'admin'))) {
+  if (existingAdmin) {
     return {
       success: false,
-      message: 'Not authorized',
+      message: 'Admin already exists',
     };
   }
 
@@ -96,10 +101,10 @@ export async function createUserAction(
       message: 'Too many requests',
     };
   }
-  await createUser(username, password);
+  const user = await createUser(username, password, 'admin');
 
-  return {
-    success: true,
-    message: `User ${username} created successfully!`,
-  };
+  const sessionToken = generateSessionToken();
+  const session = await createSession(sessionToken, user.id);
+  await setSessionTokenCookie(sessionToken, session.expiresAt);
+  return redirect('/');
 }
