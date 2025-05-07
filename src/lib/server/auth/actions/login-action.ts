@@ -20,12 +20,18 @@ import { globalPOSTRateLimit } from '@/lib/server/auth/request';
 const throttler = new Throttler<number>([1, 2, 4, 8, 16, 30, 60, 180, 300]);
 const ipBucket = new RefillingTokenBucket<string>(20, 1);
 
+type ActionResult = {
+  success: boolean;
+  message: string;
+};
+
 export async function loginAction(
   _prev: ActionResult,
   formData: FormData,
 ): Promise<ActionResult> {
   if (!globalPOSTRateLimit()) {
     return {
+      success: false,
       message: 'Too many requests',
     };
   }
@@ -33,6 +39,7 @@ export async function loginAction(
   const clientIP = (await headers()).get('X-Forwarded-For');
   if (clientIP !== null && !ipBucket.check(clientIP, 1)) {
     return {
+      success: false,
       message: 'Too many requests',
     };
   }
@@ -41,32 +48,38 @@ export async function loginAction(
   const password = formData.get('password');
   if (typeof username !== 'string' || typeof password !== 'string') {
     return {
+      success: false,
       message: 'Invalid or missing fields',
     };
   }
   if (username === '' || password === '') {
     return {
+      success: false,
       message: 'Please enter your username and password.',
     };
   }
   if (!verifyUsernameInput(username)) {
     return {
+      success: false,
       message: 'Invalid username',
     };
   }
   const user = await getUserFromUsername(username);
   if (user === null) {
     return {
+      success: false,
       message: 'Account does not exist',
     };
   }
   if (clientIP !== null && !ipBucket.consume(clientIP, 1)) {
     return {
+      success: false,
       message: 'Too many requests',
     };
   }
   if (!throttler.consume(user.id)) {
     return {
+      success: false,
       message: 'Too many requests',
     };
   }
@@ -74,6 +87,7 @@ export async function loginAction(
   const validPassword = await verifyPasswordHash(passwordHash, password);
   if (!validPassword) {
     return {
+      success: false,
       message: 'Invalid password',
     };
   }
@@ -84,10 +98,7 @@ export async function loginAction(
 
   // Add a return statement here
   return {
+    success: true,
     message: 'Login successful',
   };
-}
-
-interface ActionResult {
-  message: string;
 }

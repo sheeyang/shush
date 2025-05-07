@@ -20,6 +20,11 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { globalPOSTRateLimit } from '@/lib/server/auth/request';
 
+type ActionResult = {
+  success: boolean;
+  message: string;
+};
+
 const ipBucket = new RefillingTokenBucket<string>(3, 10);
 
 export async function signupAction(
@@ -28,6 +33,7 @@ export async function signupAction(
 ): Promise<ActionResult> {
   if (!globalPOSTRateLimit()) {
     return {
+      success: false,
       message: 'Too many requests',
     };
   }
@@ -36,6 +42,7 @@ export async function signupAction(
   const clientIP = (await headers()).get('X-Forwarded-For');
   if (clientIP !== null && !ipBucket.check(clientIP, 1)) {
     return {
+      success: false,
       message: 'Too many requests',
     };
   }
@@ -44,38 +51,45 @@ export async function signupAction(
   const password = formData.get('password');
   if (typeof username !== 'string' || typeof password !== 'string') {
     return {
+      success: false,
       message: 'Invalid or missing fields',
     };
   }
   if (username === '' || password === '') {
     return {
+      success: false,
       message: 'Please enter your username and password',
     };
   }
   if (!verifyUsernameInput(username)) {
     return {
+      success: false,
       message: 'Invalid username',
     };
   }
   const usernameAvailable = checkUsernameAvailability(username);
   if (!usernameAvailable) {
     return {
+      success: false,
       message: 'Username is already used',
     };
   }
   if (!verifyUsernameInput(username)) {
     return {
+      success: false,
       message: 'Invalid username',
     };
   }
   const strongPassword = await verifyPasswordStrength(password);
   if (!strongPassword) {
     return {
+      success: false,
       message: 'Weak password',
     };
   }
   if (clientIP !== null && !ipBucket.consume(clientIP, 1)) {
     return {
+      success: false,
       message: 'Too many requests',
     };
   }
@@ -85,8 +99,4 @@ export async function signupAction(
   const session = await createSession(sessionToken, user.id);
   await setSessionTokenCookie(sessionToken, session.expiresAt);
   return redirect('/2fa/setup');
-}
-
-interface ActionResult {
-  message: string;
 }

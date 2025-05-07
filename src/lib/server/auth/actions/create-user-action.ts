@@ -4,8 +4,33 @@ import 'server-only';
 
 import prisma from '../../db';
 import { createUser } from '../user';
+import { getCurrentSession } from '../session';
+import { checkRole } from '../helpers';
 
-export async function createUserAction(_prev: unknown, formData: FormData) {
+type ActionResult = {
+  success: boolean;
+  message: string;
+};
+
+export async function createUserAction(
+  _prev: unknown,
+  formData: FormData,
+): Promise<ActionResult> {
+  const { session } = await getCurrentSession();
+  if (session === null) {
+    return {
+      success: false,
+      message: 'Not authenticated',
+    };
+  }
+
+  if (!(await checkRole(session, 'admin'))) {
+    return {
+      success: false,
+      message: 'Not authorized',
+    };
+  }
+
   const username = formData.get('username');
   const password = formData.get('password');
 
