@@ -74,12 +74,6 @@ export async function signupAction(
       message: 'Username is already used',
     };
   }
-  if (!verifyUsernameInput(username)) {
-    return {
-      success: false,
-      message: 'Invalid username',
-    };
-  }
   const strongPassword = await verifyPasswordStrength(password);
   if (!strongPassword) {
     return {
