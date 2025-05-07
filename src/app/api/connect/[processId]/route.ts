@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { getCurrentSession } from '@/lib/server/session';
+import { getCurrentSession } from '@/lib/server/auth/session';
 import { connectProcessStream } from '@/lib/server/process-manager/connect-process-stream';
 import { NextResponse, type NextRequest } from 'next/server';
 

@@ -1,11 +1,11 @@
 'use server';
 
-import { globalPOSTRateLimit } from '@/lib/server/request';
+import { globalPOSTRateLimit } from '@/lib/server/auth/request';
 import {
   deleteSessionTokenCookie,
   getCurrentSession,
   invalidateSession,
-} from '@/lib/server/session';
+} from '@/lib/server/auth/session';
 import { redirect } from 'next/navigation';
 
 export async function logoutAction(): Promise<ActionResult> {

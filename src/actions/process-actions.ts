@@ -2,7 +2,7 @@
 
 import 'server-only';
 
-import { getCurrentSession } from '@/lib/server/session';
+import { getCurrentSession } from '@/lib/server/auth/session';
 import { addProcess } from '@/lib/server/process-manager/add-process';
 import { runProcess } from '@/lib/server/process-manager/run-process';
 import { killProcess } from '@/lib/server/process-manager/kill-process';

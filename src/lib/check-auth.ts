@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation';
 import prisma from './server/db';
-import { getCurrentSession } from './server/session';
+import { getCurrentSession } from './server/auth/session';
 
 export async function checkAuth() {
   const { session } = await getCurrentSession();

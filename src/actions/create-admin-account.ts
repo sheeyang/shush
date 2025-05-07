@@ -1,7 +1,7 @@
 'use server';
 
 import prisma from '@/lib/server/db';
-import { createUser } from '@/lib/server/user';
+import { createUser } from '@/lib/server/auth/user';
 
 // THIS SHOULD ONLY BE USED FOR INITIAL SETUP
 // IF THERE IS ALREADY AN ADMIN, IT WILL THROW AN ERROR

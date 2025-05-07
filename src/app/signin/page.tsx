@@ -15,7 +15,7 @@ import { FormEvent, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { loginAction } from '@/lib/login-action';
+import { loginAction } from '@/lib/server/auth/actions/login-action';
 
 const initialState = {
   message: '',

@@ -16,7 +16,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useRouter } from 'next/navigation';
 import { createAdminAccount } from '@/actions/create-admin-account';
-import { loginAction } from '@/lib/login-action';
+import { loginAction } from '@/lib/server/auth/actions/login-action';
 
 const initialState = {
   message: '',

@@ -10,55 +10,43 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { authClient } from '@/lib/auth-client';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useState, FormEvent } from 'react';
+import { useActionState, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { createUserAction } from '@/lib/server/auth/actions/create-user-action';
+
+// Initial state for the form
+const initialState = {
+  success: false,
+  message: '',
+};
 
 export default function AddUserCard() {
   const [pending, setPending] = useState(false);
+  const [state, formAction] = useActionState(createUserAction, initialState);
 
-  const handleAddUser = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  // Handle form submission
+  const handleSubmit = async (formData: FormData) => {
     setPending(true);
 
-    const formData = new FormData(event.currentTarget);
-    const username = formData.get('username') as string;
-    const password = formData.get('password') as string;
-
-    if (!username || !password) {
-      toast.error('Username and password are required.');
-      setPending(false);
-      return;
-    }
-
     try {
-      const response = await authClient.admin.createUser({
-        email: `${username}@email.email`,
-        name: username,
-        password: password,
-        role: 'user',
-      });
+      formAction(formData);
 
-      if (response.error) {
-        throw new Error(response.error.message);
+      if (state.success) {
+        toast.success(state.message);
+      } else if (state.message) {
+        toast.error(state.message);
       }
-
-      toast.success(`User ${username} created successfully!`);
     } catch (error) {
-      if (error instanceof Error) {
-        toast.error(
-          `Failed to create user: ${error.message || 'Unknown error'}`,
-        );
-      }
+      toast.error('An unexpected error occurred: ' + String(error));
     } finally {
       setPending(false);
     }
   };
 
   return (
-    <form onSubmit={handleAddUser}>
+    <form action={handleSubmit}>
       <Card>
         <CardHeader>
           <CardTitle>Add User</CardTitle>

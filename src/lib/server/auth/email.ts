@@ -1,4 +1,4 @@
-import prisma from './db';
+import prisma from '../db';
 
 export function verifyEmailInput(email: string): boolean {
   return /^.+@.+\..+$/.test(email) && email.length < 256;

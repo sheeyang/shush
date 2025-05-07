@@ -1,16 +1,16 @@
 'use server';
 
-import { verifyEmailInput } from '@/lib/server/email';
-import { verifyPasswordHash } from '@/lib/server/password';
-import { RefillingTokenBucket, Throttler } from '@/lib/server/rate-limit';
+import { verifyEmailInput } from '@/lib/server/auth/email';
+import { verifyPasswordHash } from '@/lib/server/auth/password';
+import { RefillingTokenBucket, Throttler } from '@/lib/server/auth/rate-limit';
 import {
   createSession,
   generateSessionToken,
   setSessionTokenCookie,
-} from '@/lib/server/session';
-import { getUserFromEmail, getUserPasswordHash } from '@/lib/server/user';
+} from '@/lib/server/auth/session';
+import { getUserFromEmail, getUserPasswordHash } from '@/lib/server/auth/user';
 import { headers } from 'next/headers';
-import { globalPOSTRateLimit } from '@/lib/server/request';
+import { globalPOSTRateLimit } from '@/lib/server/auth/request';
 
 const throttler = new Throttler<number>([1, 2, 4, 8, 16, 30, 60, 180, 300]);
 const ipBucket = new RefillingTokenBucket<string>(20, 1);

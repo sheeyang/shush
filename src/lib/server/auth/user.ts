@@ -1,11 +1,12 @@
-import prisma from './db';
+import prisma from '../db';
 import { hashPassword } from './password';
 
-export function verifyUsernameInput(username: string): boolean {
-  return (
-    username.length > 3 && username.length < 32 && username.trim() === username
-  );
-}
+// TODO: should probably use this
+// export function verifyUsernameInput(username: string): boolean {
+//   return (
+//     username.length > 3 && username.length < 32 && username.trim() === username
+//   );
+// }
 
 export async function createUser(
   email: string,
@@ -39,7 +40,7 @@ export async function updateUserPassword(
   });
 }
 
-export async function updateUserEmailAndSetEmailAsVerified(
+export async function updateUserEmail(
   userId: number,
   email: string,
 ): Promise<void> {
@@ -82,7 +83,4 @@ export async function getUserFromEmail(email: string): Promise<User | null> {
 export interface User {
   id: number;
   email: string;
-  username?: string;
-  emailVerified?: boolean;
-  registered2FA?: boolean;
 }
