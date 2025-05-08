@@ -11,6 +11,7 @@ import { ProcessInfoClient } from '@/interfaces/process';
 import { useShallow } from 'zustand/shallow';
 import { devtools } from 'zustand/middleware';
 import { StateCreator } from 'zustand';
+import { connectProcessStream } from '@/lib/server/process-manager/connect-process-stream';
 
 type ProcessStoreActions = {
   initializeStore: () => Promise<void>;
@@ -119,19 +120,11 @@ export const createProcessStore = () => {
 
           try {
             const lastOutputTime = currentProcess?.lastOutputTime || 0;
-            const url = new URL(
-              `/api/connect/${processId}`,
-              window.location.origin,
-            );
-            url.searchParams.append(
-              'lastOutputTime',
-              lastOutputTime.toString(),
-            );
 
-            const response = await fetch(url.toString());
-            if (!response.body) {
-              throw new Error('No response body available');
-            }
+            const outputStream = await connectProcessStream(
+              processId,
+              new Date(lastOutputTime),
+            );
 
             const writableStream = new WritableStream({
               write(chunk) {
@@ -142,7 +135,7 @@ export const createProcessStore = () => {
               },
             });
 
-            response.body
+            outputStream
               .pipeThrough(new TextDecoderStream())
               .pipeTo(writableStream)
               .then(() => {

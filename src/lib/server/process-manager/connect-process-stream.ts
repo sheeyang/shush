@@ -1,16 +1,19 @@
+'use server';
+
 import 'server-only';
 
-import { Readable, PassThrough } from 'stream';
+import { PassThrough } from 'stream';
 import { pipeline } from 'stream/promises';
 import activeProcesses from './active-processes-singleton';
 import { FormatOutputReverseTransform } from '../node-streams/format-output-reverse-stream';
 import { getHistoricalOutput } from './helpers/get-historical-output';
 import { getCurrentSession } from '../auth/session';
+import { nodeReadableToWebReadable } from './helpers/node-readable-to-web-readable';
 
 export async function connectProcessStream(
   processId: string,
   lastOutputTime: Date,
-): Promise<Readable> {
+): Promise<ReadableStream> {
   const { session } = await getCurrentSession();
   if (session === null) {
     throw new Error('Not authenticated');
@@ -33,7 +36,7 @@ export async function connectProcessStream(
   if (!processInfo) {
     // This could happen if the process is already finished before connecting
     outputStream.end();
-    return outputStream;
+    return nodeReadableToWebReadable(outputStream);
   }
 
   // Use pipe here instead of pipeline because pipeline will automatically
@@ -52,5 +55,5 @@ export async function connectProcessStream(
     );
   });
 
-  return outputStream;
+  return nodeReadableToWebReadable(outputStream);
 }
