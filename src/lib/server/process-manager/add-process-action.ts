@@ -1,12 +1,20 @@
+'use server';
+
 import 'server-only';
 
 import prisma from '../db';
+import { getCurrentSession } from '../auth/session';
 
-export async function addProcess(
+export async function addProcessAction(
   command: string,
   args: string[],
   label: string,
 ): Promise<string> {
+  const { session } = await getCurrentSession();
+  if (session === null) {
+    throw new Error('Not authenticated');
+  }
+
   const processId = crypto.randomUUID();
 
   // Store in database

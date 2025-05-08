@@ -2,13 +2,11 @@
 
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import {
-  addProcessAction,
-  getAllProcessesAction,
-  killProcessAction,
-  removeProcessAction,
-  runProcessAction,
-} from '../../actions/process-actions';
+import { getAllProcessesAction } from '@/lib/server/process-manager/get-all-processes-action';
+import { addProcessAction } from '@/lib/server/process-manager/add-process-action';
+import { killProcessAction } from '@/lib/server/process-manager/kill-process-action';
+import { removeProcessAction } from '@/lib/server/process-manager/remove-process-action';
+import { runProcessAction } from '@/lib/server/process-manager/run-process-action';
 import { ProcessInfoClient } from '@/interfaces/process';
 import { useShallow } from 'zustand/shallow';
 import { devtools } from 'zustand/middleware';

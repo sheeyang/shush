@@ -1,11 +1,19 @@
+'use server';
+
 import 'server-only';
 
 import prisma from '../db';
-import { killProcess } from './kill-process';
+import { killProcessAction } from './kill-process-action';
+import { getCurrentSession } from '../auth/session';
 
-export async function removeProcess(processId: string): Promise<void> {
+export async function removeProcessAction(processId: string): Promise<void> {
+  const { session } = await getCurrentSession();
+  if (session === null) {
+    throw new Error('Not authenticated');
+  }
+
   try {
-    await killProcess(processId);
+    await killProcessAction(processId);
   } catch (error) {
     if (error instanceof Error) {
       // ignore the error if the process is not found or not running

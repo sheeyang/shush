@@ -2,14 +2,20 @@ import 'server-only';
 
 import { Readable, PassThrough } from 'stream';
 import { pipeline } from 'stream/promises';
-import activeProcesses from '../processes';
-import { FormatOutputReverseTransform } from '../node-stream-transforms/format-output-reverse-stream';
+import activeProcesses from './active-processes-singleton';
+import { FormatOutputReverseTransform } from '../node-streams/format-output-reverse-stream';
 import { getHistoricalOutput } from './helpers/get-historical-output';
+import { getCurrentSession } from '../auth/session';
 
 export async function connectProcessStream(
   processId: string,
   lastOutputTime: Date,
 ): Promise<Readable> {
+  const { session } = await getCurrentSession();
+  if (session === null) {
+    throw new Error('Not authenticated');
+  }
+
   // Make a "copy" of eventStream because we don't want to destroy
   // processInfo.eventStream when connection to the client its lost
   const eventStream = new PassThrough({ objectMode: true });

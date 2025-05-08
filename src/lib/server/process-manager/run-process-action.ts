@@ -1,14 +1,22 @@
+'use server';
+
 import 'server-only';
 
 import prisma from '../db';
-import activeProcesses from '../processes';
+import activeProcesses from './active-processes-singleton';
 import spawn from 'cross-spawn';
 import { PassThrough } from 'stream';
 import { pipeline } from 'stream/promises';
-import { DatabaseStream } from '../node-stream-transforms/database-stream';
-import { FormatOutputTransform } from '../node-stream-transforms/format-output-stream';
+import { DatabaseStream } from '../node-streams/database-stream';
+import { FormatOutputTransform } from '../node-streams/format-output-stream';
+import { getCurrentSession } from '../auth/session';
 
-export async function runProcess(processId: string): Promise<void> {
+export async function runProcessAction(processId: string): Promise<void> {
+  const { session } = await getCurrentSession();
+  if (session === null) {
+    throw new Error('Not authenticated');
+  }
+
   try {
     const processData = await prisma.processData.findUnique({
       where: { id: processId },
