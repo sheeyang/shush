@@ -7,18 +7,18 @@ import CommandOutput from './command-output';
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
 import {
-  usePingActions,
-  usePingProcessLabel,
-  usePingProcessState,
-} from '@/stores/ping-store';
+  useActions,
+  useProcessLabel,
+  useProcessState,
+} from '@/stores/process-store';
 import { useTransition } from 'react';
 
 export default function CommandCard({ processId }: { processId: string }) {
-  const label = usePingProcessLabel(processId);
-  const processState = usePingProcessState(processId);
+  const label = useProcessLabel(processId);
+  const processState = useProcessState(processId);
 
   const { runProcess, killProcess, connectProcessStream, removeProcess } =
-    usePingActions();
+    useActions();
 
   const [isDeleting, startTransition] = useTransition();
 

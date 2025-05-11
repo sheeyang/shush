@@ -1,4 +1,4 @@
-import { Home, Inbox } from 'lucide-react';
+import { Home, Settings } from 'lucide-react';
 
 import {
   Sidebar,
@@ -17,14 +17,14 @@ import { ModeToggle } from '@/components/theme/mode-toggle';
 // Menu items.
 const items = [
   {
-    title: 'Ping',
-    url: '/ping',
+    title: 'Home',
+    url: '/',
     icon: Home,
   },
   {
-    title: 'TikTok',
-    url: '/tiktok',
-    icon: Inbox,
+    title: 'Settings',
+    url: '/settings',
+    icon: Settings,
   },
 ];
 

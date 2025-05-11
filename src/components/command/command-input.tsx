@@ -3,33 +3,69 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { usePingActions } from '@/stores/ping-store';
-import { useState } from 'react';
+import { useActions } from '@/stores/process-store';
+import { useEffect, useState } from 'react';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { getAllowedCommandsAction } from '@/lib/server/command-manager/get-allowed-commands-action';
 
 export default function CommandInput() {
-  const [address, setAddress] = useState('localhost');
-  const { addCommandProcess } = usePingActions();
+  const { addCommandProcess } = useActions();
+  const [allowedCommands, setAllowedCommands] = useState<
+    Awaited<ReturnType<typeof getAllowedCommandsAction>>
+  >([]);
 
-  const handleSubmit = async () => {
+  async function fetchAllowedCommands() {
+    setAllowedCommands(await getAllowedCommandsAction());
+  }
+
+  useEffect(() => {
+    fetchAllowedCommands();
+  }, []);
+
+  const handleSubmit = async (formData: FormData) => {
+    const arg = formData.get('arg')?.toString() ?? '';
+    const command = formData.get('command')?.toString() ?? '';
+
     try {
-      await addCommandProcess('temp', [], address);
+      await addCommandProcess(command, [arg], arg);
     } catch (error) {
       console.error('Failed to add process:', error);
     }
   };
 
   return (
-    <Card className='w-lg'>
-      <CardContent className='flex flex-row gap-2'>
-        <Input
-          value={address}
-          placeholder='Address'
-          onChange={(e) => setAddress(e.target.value)}
-        />
-        <Button variant='outline' onClick={handleSubmit}>
-          Add
-        </Button>
-      </CardContent>
-    </Card>
+    <form action={handleSubmit}>
+      <Card className='w-lg'>
+        <CardContent className='flex flex-row gap-2'>
+          <Select
+            key={allowedCommands.length > 0 ? 'loaded' : 'loading'} // force re-render when allowedCommands changes
+            name='command'
+            defaultValue={allowedCommands[0]?.command || ''}
+          >
+            <SelectTrigger className='w-60'>
+              <SelectValue placeholder='Command' />
+            </SelectTrigger>
+            <SelectContent>
+              {allowedCommands.map((commandDetails) => (
+                <SelectItem
+                  value={commandDetails.command}
+                  key={commandDetails.id}
+                >
+                  {commandDetails.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input name='arg' />
+          <Button variant='outline'>Add</Button>
+        </CardContent>
+      </Card>
+    </form>
   );
 }

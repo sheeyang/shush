@@ -1,4 +1,5 @@
 import AddUserCard from '@/components/settings/add-user-card';
+import ManageCommandsCard from '@/components/settings/manage-commands-card';
 import ManageUsersCard from '@/components/settings/manage-users-card';
 import { redirectUnauthenticated } from '@/lib/redirect-unauthenticated';
 
@@ -10,6 +11,7 @@ export default async function SettingsPage() {
       <h1 className='mb-6 text-3xl font-bold'>Settings</h1>
       <AddUserCard />
       <ManageUsersCard />
+      <ManageCommandsCard />
     </div>
   );
 }

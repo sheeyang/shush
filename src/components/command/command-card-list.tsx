@@ -1,17 +1,17 @@
 'use client';
 
-import { usePingActions, usePingProcessIds } from '@/stores/ping-store';
+import { useActions, useProcessIds } from '@/stores/process-store';
 import CommandCard from './command-card';
 import { useEffect } from 'react';
 
 export default function CommandCardList() {
-  const processActions = usePingActions();
+  const processActions = useActions();
 
   useEffect(() => {
     processActions.initializeStore();
   }, [processActions]);
 
-  const processIds = usePingProcessIds();
+  const processIds = useProcessIds();
 
   return processIds.map((processId) => (
     <CommandCard key={processId} processId={processId} />

@@ -26,8 +26,11 @@ export default function ManageUsersCard() {
     try {
       const response = await fetchUsersAction();
 
-      if ('error' in response) {
-        throw new Error(response.error);
+      if (!response.success) {
+        toast.error(
+          `Failed to load users: ${response.message || 'Unknown error'}`,
+        );
+        return;
       }
 
       setUsers(response.users);

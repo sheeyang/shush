@@ -1,9 +1,14 @@
+import CommandCardList from '@/components/command/command-card-list';
+import CommandInput from '@/components/command/command-input';
 import { redirectUnauthenticated } from '@/lib/redirect-unauthenticated';
-import { redirect } from 'next/navigation';
 
-export default async function Home() {
+export default async function HomePage() {
   await redirectUnauthenticated();
 
-  // Redirect to the ping page by default
-  redirect('/ping');
+  return (
+    <div className='flex min-h-[calc(100vh-2rem)] w-full flex-col items-center gap-4 overflow-y-auto pt-[20vh] pb-8'>
+      <CommandInput />
+      <CommandCardList />
+    </div>
+  );
 }
