@@ -2,9 +2,10 @@ import type { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Next.js PWA',
-    short_name: 'NextPWA',
-    description: 'A Progressive Web App built with Next.js',
+    name: 'Shush',
+    short_name: 'Shush',
+    description:
+      'Shush is a web-based application that allows you to run command-line utilities on your computer through the browser. It provides a user-friendly interface for managing and executing commands.',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',
