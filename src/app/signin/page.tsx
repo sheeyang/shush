@@ -18,7 +18,6 @@ import { toast } from 'sonner';
 import { loginAction } from '@/lib/server/auth/actions/login-action';
 
 const initialState = {
-  success: false,
   message: '',
 };
 
