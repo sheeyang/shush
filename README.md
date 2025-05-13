@@ -1,55 +1,15 @@
 # Shush App
 
-Shush is a web-based application that brings command-line utilities to the browser. It provides a user-friendly interface for managing processes, executing commands, and interacting with various utilities like TikTok and Ping tools.
+Shush is a web-based application that allows you to run command-line utilities on your computer through the browser. It provides a user-friendly interface for managing and executing commands.
 
 ## Features
 
 - **Command Management**: Add, run, and manage command-line processes with real-time output streaming.
 - **Sidebar Navigation**: A collapsible sidebar for easy navigation between different utilities.
-- **TikTok Utility**: Tools for interacting with TikTok-related functionalities (currently under development).
-- **Ping Utility**: A feature to execute and monitor ping commands.
-- **Authentication**: Secure login and admin account setup using `better-auth`.
+- **Authentication**: Secure login and admin account setup.
 - **Theming**: Light and dark mode support with customizable themes.
 - **Responsive Design**: Optimized for both desktop and mobile devices.
-
-## Project Structure
-
-The project is organized into the following key directories:
-
-- **`src/app`**: Contains the main application pages like `signin`, `setup`, `ping`, and `tiktok`.
-- **`src/components`**: Reusable UI components such as buttons, cards, sidebar, dropdown menus, and more.
-- **`src/lib`**: Utility functions and backend logic, including process management and stream handling.
-- **`src/stores`**: State management for processes and other application data.
-
-## Key Components
-
-### Sidebar
-
-The sidebar provides navigation and is collapsible. It includes:
-
-- Application links (e.g., Ping, TikTok).
-- A mode toggle for switching between light and dark themes.
-
-### Command Management
-
-- **Command Cards**: Display individual processes with options to start, stop, and remove them.
-- **Command Output**: Real-time streaming of process output in a resizable scroll area.
-
-### Authentication
-
-- **Sign In**: Login functionality with "Remember Me" support.
-- **Setup**: Admin account creation with automatic login.
-
-## Technologies Used
-
-- **React**: Frontend framework.
-- **Next.js**: Server-side rendering and routing.
-- **Radix UI**: Accessible UI primitives.
-- **Tailwind CSS**: Utility-first CSS framework.
-- **Zustand**: State management.
-- **Lucide Icons**: Icon library.
-- **Sonner**: Toast notifications.
-- **Prisma**: Database ORM for managing process data.
+- **Settings Management**: Configure application preferences and user settings.
 
 ## Getting Started
 
@@ -62,12 +22,22 @@ The sidebar provides navigation and is collapsible. It includes:
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/sheeyang/shush
    cd shush
    ```
 2. Install dependencies:
    ```bash
    pnpm install
+   ```
+3. Create a `.env` file in the project root with the following content:
+
+   ```
+   DATABASE_URL="file:./dev.db"
+   ```
+
+4. Set up the database:
+   ```bash
+   pnpm prisma migrate dev --name init
    ```
 
 ### Running the Application
@@ -77,6 +47,7 @@ The sidebar provides navigation and is collapsible. It includes:
    pnpm dev
    ```
 2. Open your browser and navigate to `http://localhost:3000`.
+3. If this is your first time, you'll be directed to the setup page to create an admin account.
 
 ### Building for Production
 
@@ -88,6 +59,54 @@ The sidebar provides navigation and is collapsible. It includes:
    ```bash
    pnpm start
    ```
+
+## Project Structure
+
+The project is organized into the following key directories:
+
+- **`src/app`**: Contains the main application pages like `signin`, `setup`, and `settings`.
+- **`src/components`**: Reusable UI components such as buttons, cards, sidebar, dropdown menus, and more.
+- **`src/lib`**: Utility functions and backend logic, including process management, stream handling, and server-side operations.
+- **`src/stores`**: State management for processes and other application data using Zustand.
+- **`src/hooks`**: Custom React hooks.
+- **`src/interfaces`**: TypeScript type definitions and interfaces.
+- **`prisma`**: Database schema and migrations for SQLite database.
+
+## Key Components
+
+### Sidebar
+
+The sidebar provides navigation and is collapsible. It includes:
+
+- Page links (e.g., Settings).
+- A mode toggle for switching between light and dark themes.
+
+### Command Management
+
+- **Command Cards**: Display individual processes with options to start, stop, and remove them.
+- **Command Output**: Real-time streaming of process output in a resizable scroll area.
+
+### Authentication
+
+- **Sign In**: Login functionality with "Remember Me" support.
+- **Setup**: Admin account creation with automatic login.
+
+### Settings
+
+- Configure application preferences and user settings.
+
+## Technologies Used
+
+- **React**: Frontend framework.
+- **Next.js**: Server-side rendering and routing.
+- **Radix UI**: Accessible UI primitives.
+- **Tailwind CSS**: Utility-first CSS framework.
+- **Zustand**: State management.
+- **Lucide Icons**: Icon library.
+- **Sonner**: Toast notifications.
+- **Prisma**: Database ORM for managing process data.
+- **SQLite**: Lightweight database for storing application data.
+- **TypeScript**: Type-safe JavaScript for better development experience.
 
 ## Contributing
 
