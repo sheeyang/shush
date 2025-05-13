@@ -11,45 +11,24 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { toast } from 'sonner';
-import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Loader2, Trash2 } from 'lucide-react';
 
-// You'll need to create these action files
-import { getAllowedCommandsAction } from '@/lib/server/command-manager/get-allowed-commands-action';
 import { removeAllowedCommandAction } from '@/lib/server/command-manager/remove-allowed-command-action';
 import { addAllowedCommandAction } from '@/lib/server/command-manager/add-allowed-command-action';
-
-// Define the command type based on your schema
-type AllowedCommand = {
-  id: number;
-  name: string;
-  command: string;
-};
+import { useActions, useAllowedCommands } from '@/stores/process-store';
+import { useEffect, useState } from 'react';
 
 export default function ManageCommandsCard() {
-  const [pending, setPending] = useState(false);
-  const [commands, setCommands] = useState<AllowedCommand[]>([]);
   const [newCommand, setNewCommand] = useState('');
   const [isAdding, setIsAdding] = useState(false);
 
-  const loadCommands = async () => {
-    setPending(true);
+  const commands = useAllowedCommands();
+  const processActions = useActions();
 
-    try {
-      const commands = await getAllowedCommandsAction();
-
-      setCommands(commands);
-    } catch (error) {
-      if (error instanceof Error) {
-        toast.error(
-          `Failed to load commands: ${error.message || 'Unknown error'}`,
-        );
-      }
-    } finally {
-      setPending(false);
-    }
-  };
+  useEffect(() => {
+    processActions.fetchAllowedCommands();
+  }, [processActions]);
 
   const handleAddCommand = async () => {
     if (!newCommand.trim()) {
@@ -64,7 +43,7 @@ export default function ManageCommandsCard() {
 
       toast.success('Command added successfully');
       setNewCommand('');
-      loadCommands(); // Refresh the list
+      processActions.fetchAllowedCommands(); // TODO: This fetches all processes too, which is inefficient
     } catch (error) {
       if (error instanceof Error) {
         toast.error(
@@ -80,7 +59,7 @@ export default function ManageCommandsCard() {
     try {
       await removeAllowedCommandAction(command);
       toast.success('Command removed successfully');
-      loadCommands(); // Refresh the list
+      processActions.fetchAllowedCommands(); // Refresh the list
     } catch (error) {
       if (error instanceof Error) {
         toast.error(
@@ -89,10 +68,6 @@ export default function ManageCommandsCard() {
       }
     }
   };
-
-  useEffect(() => {
-    loadCommands();
-  }, []);
 
   return (
     <Card className='mt-6'>
@@ -113,39 +88,34 @@ export default function ManageCommandsCard() {
           </Button>
         </div>
 
-        {pending ? (
-          <div>Loading commands...</div>
-        ) : (
-          commands.map((cmd) => {
-            return (
-              <div
-                key={cmd.id}
-                className='flex items-center justify-between border-b py-2'
-              >
-                <div>
-                  <Label className='font-medium'>{cmd.name}</Label>
-                  <div className='text-sm text-gray-500'>{cmd.command}</div>
-                </div>
-                <Button
-                  variant='ghost'
-                  size='icon'
-                  onClick={() => handleRemoveCommand(cmd.command)}
-                >
-                  <Trash2 size={16} className='text-red-500' />
-                </Button>
+        {commands.map((cmd) => {
+          return (
+            <div
+              key={cmd.id}
+              className='flex items-center justify-between border-b py-2'
+            >
+              <div>
+                <Label className='font-medium'>{cmd.name}</Label>
+                <div className='text-sm text-gray-500'>{cmd.command}</div>
               </div>
-            );
-          })
-        )}
-        {!pending && commands.length === 0 && (
-          <div className='py-4 text-center text-gray-500'>
-            No commands found
-          </div>
-        )}
+              <Button
+                variant='ghost'
+                size='icon'
+                onClick={() => handleRemoveCommand(cmd.command)}
+              >
+                <Trash2 size={16} className='text-red-500' />
+              </Button>
+            </div>
+          );
+        })}
       </CardContent>
       <CardFooter>
         {/* You could add refresh button here */}
-        <Button variant='outline' onClick={loadCommands} className='w-full'>
+        <Button
+          variant='outline'
+          onClick={processActions.fetchAllowedCommands}
+          className='w-full'
+        >
           Refresh
         </Button>
       </CardFooter>

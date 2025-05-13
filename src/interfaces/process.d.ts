@@ -21,3 +21,9 @@ type ProcessOutputInfoServer = {
   output: string;
   createdAt: Date;
 };
+
+type AllowedCommandInfo = {
+  id: number;
+  name: string;
+  command: string;
+};

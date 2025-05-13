@@ -7,14 +7,16 @@ import { addProcessAction } from '@/lib/server/process-manager/add-process-actio
 import { killProcessAction } from '@/lib/server/process-manager/kill-process-action';
 import { removeProcessAction } from '@/lib/server/process-manager/remove-process-action';
 import { runProcessAction } from '@/lib/server/process-manager/run-process-action';
-import { ProcessInfoClient } from '@/interfaces/process';
+import { AllowedCommandInfo, ProcessInfoClient } from '@/interfaces/process';
 import { useShallow } from 'zustand/shallow';
 import { devtools } from 'zustand/middleware';
 import { StateCreator } from 'zustand';
 import { connectProcessStream } from '@/lib/server/process-manager/connect-process-stream';
+import { getAllowedCommandsAction } from '@/lib/server/command-manager/get-allowed-commands-action';
 
 type ProcessStoreActions = {
-  initializeStore: () => Promise<void>;
+  fetchAllProcesses: () => Promise<void>;
+  fetchAllowedCommands: () => Promise<void>;
   addCommandProcess: (
     command: string,
     args: string[],
@@ -28,6 +30,7 @@ type ProcessStoreActions = {
 
 type ProcessStore = {
   processes: Record<string, ProcessInfoClient>;
+  allowedCommands: AllowedCommandInfo[];
   actions: ProcessStoreActions;
 };
 
@@ -54,13 +57,21 @@ export const createProcessStore = () => {
     middlewares((set, get) => ({
       // Add get to access state within actions
       processes: {},
-
+      allowedCommands: [],
       actions: {
-        initializeStore: async () => {
+        fetchAllProcesses: async () => {
           const processes = await getAllProcessesAction();
 
           set((state) => {
             state.processes = processes;
+          });
+        },
+
+        fetchAllowedCommands: async () => {
+          const allowedCommands = await getAllowedCommandsAction(); // TODO: make them run concurrently
+
+          set((state) => {
+            state.allowedCommands = allowedCommands;
           });
         },
 
@@ -154,7 +165,7 @@ export const createProcessStore = () => {
 
   // Create and return selectors along with the store
   return {
-    useStore,
+    useAllowedCommands: () => useStore((state) => state.allowedCommands),
     useProcessIds: () =>
       useStore(useShallow((state) => Object.keys(state.processes))),
     useProcessState: (processId: string) =>

@@ -1,8 +1,11 @@
 'use server';
 
+import { AllowedCommandInfo } from '@/interfaces/process';
 import prisma from '../db';
 
-export async function getAllowedCommandsAction() {
+export async function getAllowedCommandsAction(): Promise<
+  AllowedCommandInfo[]
+> {
   const commands = await prisma.allowedCommand.findMany({
     select: {
       id: true,

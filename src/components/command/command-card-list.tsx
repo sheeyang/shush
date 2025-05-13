@@ -8,7 +8,8 @@ export default function CommandCardList() {
   const processActions = useActions();
 
   useEffect(() => {
-    processActions.initializeStore();
+    processActions.fetchAllowedCommands();
+    processActions.fetchAllProcesses();
   }, [processActions]);
 
   const processIds = useProcessIds();

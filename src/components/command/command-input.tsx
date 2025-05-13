@@ -3,8 +3,7 @@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { useActions } from '@/stores/process-store';
-import { useEffect, useState } from 'react';
+import { useActions, useAllowedCommands } from '@/stores/process-store';
 import {
   Select,
   SelectContent,
@@ -12,21 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getAllowedCommandsAction } from '@/lib/server/command-manager/get-allowed-commands-action';
 
 export default function CommandInput() {
   const { addCommandProcess } = useActions();
-  const [allowedCommands, setAllowedCommands] = useState<
-    Awaited<ReturnType<typeof getAllowedCommandsAction>>
-  >([]);
 
-  async function fetchAllowedCommands() {
-    setAllowedCommands(await getAllowedCommandsAction());
-  }
-
-  useEffect(() => {
-    fetchAllowedCommands();
-  }, []);
+  const allowedCommands = useAllowedCommands();
 
   const handleSubmit = async (formData: FormData) => {
     const arg = formData.get('arg')?.toString() ?? '';
