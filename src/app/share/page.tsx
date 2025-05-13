@@ -1,24 +1,20 @@
 'use client';
 
-import { useSearchParams } from 'next/navigation';
+import { redirect, useSearchParams } from 'next/navigation';
+import CommandInput from '@/components/command/command-input';
 
 export default function SharePage() {
   const searchParams = useSearchParams();
-  const sharedText = searchParams.get('text');
-
-  console.log(searchParams.entries());
+  const sharedText = searchParams.get('text') || '';
 
   return (
-    <div className='p-4'>
-      <h1 className='mb-4 text-xl font-bold'>Content Shared</h1>
-      <div>
-        <p>Content was shared to the app!</p>
-        <div>
-          <p>
-            <strong>Shared content:</strong> {sharedText}
-          </p>
-        </div>
-      </div>
+    <div className='flex min-h-[calc(100vh-2rem)] w-full flex-col items-center justify-center overflow-y-auto py-8'>
+      <CommandInput
+        inputValue={sharedText}
+        onSubmit={() => {
+          redirect('/');
+        }}
+      />
     </div>
   );
 }

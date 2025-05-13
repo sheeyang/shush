@@ -5,12 +5,11 @@ import CommandCard from './command-card';
 import { useEffect } from 'react';
 
 export default function CommandCardList() {
-  const processActions = useActions();
+  const { fetchAllProcesses } = useActions();
 
   useEffect(() => {
-    processActions.fetchAllowedCommands();
-    processActions.fetchAllProcesses();
-  }, [processActions]);
+    fetchAllProcesses();
+  }, [fetchAllProcesses]);
 
   const processIds = useProcessIds();
 

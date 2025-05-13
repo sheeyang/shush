@@ -11,9 +11,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useEffect } from 'react';
 
-export default function CommandInput() {
-  const { addCommandProcess } = useActions();
+interface CommandInputProps {
+  inputValue?: string;
+  inputDisabled?: boolean;
+  onSubmit?: (formData: FormData) => void;
+}
+
+export default function CommandInput({
+  inputValue = '',
+  onSubmit = () => {},
+}: CommandInputProps) {
+  const { addCommandProcess, fetchAllowedCommands } = useActions();
+
+  useEffect(() => {
+    fetchAllowedCommands();
+  }, [fetchAllowedCommands]);
 
   const allowedCommands = useAllowedCommands();
 
@@ -21,11 +35,15 @@ export default function CommandInput() {
     const arg = formData.get('arg')?.toString() ?? '';
     const command = formData.get('command')?.toString() ?? '';
 
+    console.log({ arg, command });
+
     try {
       await addCommandProcess(command, [arg], arg);
     } catch (error) {
       console.error('Failed to add process:', error);
     }
+
+    onSubmit(formData);
   };
 
   return (
@@ -51,7 +69,7 @@ export default function CommandInput() {
               ))}
             </SelectContent>
           </Select>
-          <Input name='arg' />
+          <Input name='arg' defaultValue={inputValue} />
           <Button variant='outline'>Add</Button>
         </CardContent>
       </Card>
