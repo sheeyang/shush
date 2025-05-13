@@ -83,13 +83,15 @@ export const createProcessStore = () => {
           const processId = await addProcessAction(command, args, label); // Update to pass label
 
           set((state) => {
-            // Initialize the new flag
-            state.processes[processId] = {
-              label,
-              processState: 'initialized',
-              output: '',
-              isConnectingStream: false,
-              lastOutputTime: 0,
+            state.processes = {
+              [processId]: {
+                label,
+                processState: 'initialized',
+                output: '',
+                isConnectingStream: false,
+                lastOutputTime: 0,
+              },
+              ...state.processes,
             };
           });
         },
