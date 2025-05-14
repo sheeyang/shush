@@ -37,7 +37,7 @@ Shush is a web-based application that allows you to run command-line utilities o
 
 4. Set up the database:
    ```bash
-   pnpm prisma migrate dev --name init
+   pnpm migrate:dev
    ```
 
 ### Running the Application
@@ -55,10 +55,47 @@ Shush is a web-based application that allows you to run command-line utilities o
    ```bash
    pnpm build
    ```
-2. Start the production server:
+2. Set up the database (you may need to run `pnpm migrate:dev` first):
+   ```bash
+   pnpm migrate:prod
+   ```
+3. Start the production server:
    ```bash
    pnpm start
    ```
+
+### Enabling HTTPS
+
+HTTPS is required for Progressive Web App (PWA) to work. To run your application over HTTPS, follow these steps:
+
+1. Install `mkcert`:
+   ```bash
+   choco install mkcert
+   # or
+   brew install mkcert
+   ```
+2. Generate SSL certificates for your domain (replace localhost with your domain or IP address, if needed):
+   ```bash
+   mkcert localhost
+   ```
+3. Install the local CA on your local machine:
+   ```bash
+   mkcert -install
+   ```
+4. Install SSL certificates on your other devices (optional):
+
+   First, locate the certificate authority root directory:
+
+   ```bash
+   mkcert -CAROOT
+   ```
+
+   Then, transfer the root certificate to your device and install it:
+
+   - Android: Settings > Security > Encryption & Credentials > Install from device storage > Choose the certificate file > Install
+   - iOS: Settings > General > Profile & Device Management > Install Profile > Choose the certificate file > Install
+
+   > The installation steps may vary depending on your device.
 
 ## Project Structure
 
