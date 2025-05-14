@@ -8,6 +8,7 @@ const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
+// TODO: make it so that certifcates are optional
 const options = {
   key: readFileSync('certificates/key.pem'),
   cert: readFileSync('certificates/cert.pem'),
