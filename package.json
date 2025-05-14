@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "cross-env NODE_ENV=production node server.mjs",
     "lint": "next lint",
-    "prettier": "prettier . --write"
+    "prettier": "prettier . --write",
+    "migrate:prod": "dotenv -e .env.production -- npx prisma migrate deploy",
+    "migrate:dev": "dotenv -e .env.development -- npx prisma migrate dev"
   },
   "dependencies": {
     "@node-rs/argon2": "^2.0.2",
@@ -49,6 +51,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "cross-env": "^7.0.3",
+    "dotenv-cli": "^8.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.2.5",
     "eslint-config-prettier": "^10.1.2",

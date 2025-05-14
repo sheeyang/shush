@@ -43,4 +43,6 @@ next-env.d.ts
 # project files
 /logs
 /src/generated/prisma
-/prisma/dev.db
+/prisma/dev.db*
+/prisma/prod.db*
+/prisma/migrations
