@@ -29,7 +29,7 @@ Shush is a web-based application that allows you to run command-line utilities o
    ```bash
    pnpm install
    ```
-3. Create a `.env` file in the project root with the following content:
+3. Create a `.env.developement` file in the project root with the following content:
 
    ```
    DATABASE_URL="file:./dev.db"
@@ -52,14 +52,22 @@ Shush is a web-based application that allows you to run command-line utilities o
 ### Building for Production
 
 1. Build the application:
+
    ```bash
    pnpm build
    ```
-2. Set up the database (you may need to run `pnpm migrate:dev` first):
+
+2. Create a `.env.production` file in the project root with the following content:
+
+   ```
+   DATABASE_URL="file:./prod.db"
+   ```
+
+3. Set up the database (you may need to run `pnpm migrate:dev` first):
    ```bash
    pnpm migrate:prod
    ```
-3. Start the production server:
+4. Start the production server:
    ```bash
    pnpm start
    ```
@@ -76,7 +84,8 @@ HTTPS is required for Progressive Web App (PWA) to work. To run your application
    ```
 2. Generate SSL certificates for your domain (replace localhost with your domain or IP address, if needed):
    ```bash
-   mkcert localhost
+   mkdir certificates
+   mkcert -cert-file certificates/cert.pem -key-file certificates/key.pem localhost
    ```
 3. Install the local CA on your local machine:
    ```bash

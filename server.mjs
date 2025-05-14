@@ -9,8 +9,8 @@ const app = next({ dev });
 const handle = app.getRequestHandler();
 
 const options = {
-  key: readFileSync('certificates/10.0.0.1-key.pem'),
-  cert: readFileSync('certificates/10.0.0.1.pem'),
+  key: readFileSync('certificates/key.pem'),
+  cert: readFileSync('certificates/cert.pem'),
 };
 
 app.prepare().then(() => {
