@@ -74,6 +74,9 @@ importers:
       pino:
         specifier: ^9.6.0
         version: 9.6.0
+      pino-pretty:
+        specifier: ^13.0.0
+        version: 13.0.0
       react:
         specifier: ^19.0.0
         version: 19.1.0
@@ -138,9 +141,6 @@ importers:
       eslint-plugin-react-hooks:
         specifier: ^5.2.0
         version: 5.2.0(eslint@9.24.0(jiti@2.4.2))
-      pino-pretty:
-        specifier: ^13.0.0
-        version: 13.0.0
       prettier:
         specifier: ^3.5.3
         version: 3.5.3
