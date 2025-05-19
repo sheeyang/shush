@@ -9,6 +9,8 @@ import { FormatOutputReverseTransform } from '../node-streams/format-output-reve
 import { getHistoricalOutput } from './helpers/get-historical-output';
 import { getCurrentSession } from '../auth/session';
 import { nodeReadableToWebReadable } from './helpers/node-readable-to-web-readable';
+import logger from '@/lib/logger';
+import { getClientIp } from '../common/get-client-ip';
 
 export async function connectProcessStream(
   processId: string,
@@ -18,6 +20,14 @@ export async function connectProcessStream(
   if (session === null) {
     throw new Error('Not authenticated');
   }
+
+  const clientIp = await getClientIp();
+  logger.info({
+    type: 'connectProcessStream',
+    processId,
+    lastOutputTime,
+    clientIp,
+  });
 
   // Make a "copy" of eventStream because we don't want to destroy
   // processInfo.eventStream when connection to the client its lost

@@ -1,8 +1,10 @@
+import logger from '../logger';
+
 export class DebugStream extends TransformStream {
   constructor(label = 'Debug') {
     super({
       transform(chunk, controller) {
-        console.log(`[${label}]:`, chunk);
+        logger.debug(`[${label}]:` + chunk);
         controller.enqueue(chunk);
       },
     });

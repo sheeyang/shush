@@ -4,6 +4,8 @@ import 'server-only';
 
 import prisma from '../db';
 import { getCurrentSession } from '../auth/session';
+import logger from '@/lib/logger';
+import { getClientIp } from '../common/get-client-ip';
 
 export async function addProcessAction(
   command: string,
@@ -15,7 +17,16 @@ export async function addProcessAction(
     throw new Error('Not authenticated');
   }
 
+  const clientIp = await getClientIp();
   const processId = crypto.randomUUID();
+  logger.info({
+    type: 'addProcessAction',
+    processId,
+    command,
+    args,
+    label,
+    clientIp,
+  });
 
   // Store in database
   await prisma.processData.create({

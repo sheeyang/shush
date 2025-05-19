@@ -5,12 +5,17 @@ import 'server-only';
 import prisma from '../db';
 import { killProcessAction } from './kill-process-action';
 import { getCurrentSession } from '../auth/session';
+import logger from '@/lib/logger';
+import { getClientIp } from '../common/get-client-ip';
 
 export async function removeProcessAction(processId: string): Promise<void> {
   const { session } = await getCurrentSession();
   if (session === null) {
     throw new Error('Not authenticated');
   }
+
+  const clientIp = await getClientIp();
+  logger.info({ type: 'removeProcessAction', processId, clientIp });
 
   try {
     await killProcessAction(processId);

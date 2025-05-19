@@ -10,12 +10,17 @@ import { pipeline } from 'stream/promises';
 import { DatabaseStream } from '../node-streams/database-stream';
 import { FormatOutputTransform } from '../node-streams/format-output-stream';
 import { getCurrentSession } from '../auth/session';
+import logger from '@/lib/logger';
+import { getClientIp } from '../common/get-client-ip';
 
 export async function runProcessAction(processId: string): Promise<void> {
   const { session } = await getCurrentSession();
   if (session === null) {
     throw new Error('Not authenticated');
   }
+
+  const clientIp = await getClientIp();
+  logger.info({ type: 'runProcessAction', processId, clientIp });
 
   try {
     const processData = await prisma.processData.findUnique({

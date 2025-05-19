@@ -2,6 +2,7 @@ import 'server-only';
 
 import { ProcessOutputInfoServer } from '@/interfaces/process';
 import { Transform, TransformCallback } from 'stream';
+import logger from '@/lib/logger';
 
 // TODO: this may not be needed anymore
 
@@ -22,13 +23,11 @@ export class TimestampFilterStream extends Transform {
     callback: TransformCallback,
   ) {
     try {
-      // console.log({ chunk });
-
       // Only pass through chunks that are newer than the lastOutputTime
       if (chunk.createdAt > this.lastOutputTime) {
         callback(null, chunk);
       } else {
-        console.log('skipping', chunk);
+        logger.warn('Skipping chunk: ' + chunk);
 
         // Skip this chunk
         callback();

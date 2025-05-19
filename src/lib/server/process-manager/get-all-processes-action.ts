@@ -5,6 +5,8 @@ import 'server-only';
 import { ProcessInfoClient } from '@/interfaces/process';
 import prisma from '../db';
 import { getCurrentSession } from '../auth/session';
+import { getClientIp } from '../common/get-client-ip';
+import logger from '@/lib/logger';
 
 export async function getAllProcessesAction(): Promise<
   Record<string, ProcessInfoClient>
@@ -13,6 +15,9 @@ export async function getAllProcessesAction(): Promise<
   if (session === null) {
     throw new Error('Not authenticated');
   }
+
+  const clientIp = await getClientIp();
+  logger.info({ type: 'getAllProcessesAction', clientIp });
 
   const databaseProcesses = await prisma.processData.findMany({
     select: {

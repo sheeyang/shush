@@ -20,9 +20,7 @@ app.prepare().then(() => {
     handle(req, res, parsedUrl);
   }).listen(port);
 
-  console.log(
-    `> Server listening at https://localhost:${port} as ${
-      dev ? 'development' : process.env.NODE_ENV
-    }`,
+  logger.info(
+    `> Server listening at https://localhost:${port} as ${process.env.NODE_ENV}`,
   );
 });

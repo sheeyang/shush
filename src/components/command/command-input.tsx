@@ -35,8 +35,6 @@ export default function CommandInput({
     const arg = formData.get('arg')?.toString() ?? '';
     const command = formData.get('command')?.toString() ?? '';
 
-    console.log({ arg, command });
-
     try {
       await addCommandProcess(command, [arg], arg);
     } catch (error) {
