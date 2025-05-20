@@ -3,9 +3,10 @@ import { parse } from 'url';
 import next from 'next';
 import { readFileSync } from 'fs';
 
-const port = parseInt(process.env.PORT || '3000', 10);
+const port = parseInt(process.env.PORT, 10);
 const dev = process.env.NODE_ENV !== 'production';
-const app = next({ dev });
+const turbo = process.env.TURBO_PACK === 'true';
+const app = next({ dev, turbo });
 const handle = app.getRequestHandler();
 
 // TODO: make it so that certifcates are optional
@@ -21,6 +22,6 @@ app.prepare().then(() => {
   }).listen(port);
 
   console.log(
-    `> Server listening at https://localhost:${port} as ${process.env.NODE_ENV}`,
+    `> Server started with port ${port} and ${turbo ? 'Turbopack' : 'Webpack'} in ${dev ? 'development' : 'production'} mode`,
   );
 });

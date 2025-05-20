@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "cross-env NODE_ENV=development PORT=3000 TURBO_PACK=true node server.mjs",
     "build": "next build",
-    "start": "cross-env NODE_ENV=production node server.mjs",
+    "start": "cross-env NODE_ENV=production PORT=4000 TURBO_PACK=false node server.mjs",
     "lint": "next lint",
     "prettier": "prettier . --write",
     "migrate:prod": "dotenv -e .env.production -- npx prisma migrate deploy",
