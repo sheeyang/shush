@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useEffect } from 'react';
 
 interface CommandInputProps {
   inputValue?: string;
@@ -24,16 +24,24 @@ export default function CommandInput({
   onSubmit = () => {},
 }: CommandInputProps) {
   const { addCommandProcess, fetchAllowedCommands } = useActions();
+  const allowedCommands = useAllowedCommands();
+  const commandRef = useRef<string>('');
 
   useEffect(() => {
     fetchAllowedCommands();
   }, [fetchAllowedCommands]);
 
-  const allowedCommands = useAllowedCommands();
+  const handleCommandChange = (value: string) => {
+    commandRef.current = value;
+  };
 
   const handleSubmit = async (formData: FormData) => {
-    const arg = formData.get('arg')?.toString() ?? '';
-    const command = formData.get('command')?.toString() ?? '';
+    // Bug with formData, after first submit it will secretly go
+    // back to the first value without updating the UI, so we are using
+    // a ref to store the value
+    // const command = formData.get('command')?.toString() || '';
+    const command = commandRef.current;
+    const arg = formData.get('arg')?.toString() || '';
 
     try {
       await addCommandProcess(command, [arg], arg);
@@ -51,6 +59,7 @@ export default function CommandInput({
           <Select
             key={allowedCommands.length > 0 ? 'loaded' : 'loading'} // force re-render when allowedCommands changes
             name='command'
+            onValueChange={handleCommandChange}
             defaultValue={allowedCommands[0]?.command || ''}
           >
             <SelectTrigger className='w-60'>
@@ -68,7 +77,9 @@ export default function CommandInput({
             </SelectContent>
           </Select>
           <Input name='arg' defaultValue={inputValue} />
-          <Button variant='outline'>Add</Button>
+          <Button type='submit' variant='outline'>
+            Add
+          </Button>
         </CardContent>
       </Card>
     </form>
