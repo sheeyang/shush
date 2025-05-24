@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -25,22 +25,20 @@ export default function CommandInput({
 }: CommandInputProps) {
   const { addCommandProcess, fetchAllowedCommands } = useActions();
   const allowedCommands = useAllowedCommands();
-  const commandRef = useRef<string>('');
+  const [command, setCommand] = useState('');
 
   useEffect(() => {
     fetchAllowedCommands();
   }, [fetchAllowedCommands]);
 
-  const handleCommandChange = (value: string) => {
-    commandRef.current = value;
-  };
+  // Set the initial command to the first allowed command if not already set
+  useEffect(() => {
+    if (allowedCommands.length > 0 && !command) {
+      setCommand(allowedCommands[0].command);
+    }
+  }, [allowedCommands, command]);
 
   const handleSubmit = async (formData: FormData) => {
-    // Bug with formData, after first submit it will secretly go
-    // back to the first value without updating the UI, so we are using
-    // a ref to store the value
-    // const command = formData.get('command')?.toString() || '';
-    const command = commandRef.current;
     const arg = formData.get('arg')?.toString() || '';
 
     try {
@@ -56,12 +54,7 @@ export default function CommandInput({
     <form action={handleSubmit}>
       <Card className='w-lg'>
         <CardContent className='flex flex-row gap-2'>
-          <Select
-            key={allowedCommands.length > 0 ? 'loaded' : 'loading'} // force re-render when allowedCommands changes
-            name='command'
-            onValueChange={handleCommandChange}
-            defaultValue={allowedCommands[0]?.command || ''}
-          >
+          <Select name='command' onValueChange={setCommand} value={command}>
             <SelectTrigger className='w-60'>
               <SelectValue placeholder='Command' />
             </SelectTrigger>
