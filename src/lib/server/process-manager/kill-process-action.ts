@@ -26,5 +26,14 @@ export async function killProcessAction(processId: string): Promise<void> {
     throw new Error(`Process ${processId} is not running`);
   }
 
-  processInfo.process.kill();
+  if (process.platform === 'win32') {
+    // On Windows, use taskkill to forcefully terminate the process
+    const { execSync } = await import('child_process');
+    execSync(`taskkill /F /T /PID ${processInfo.process.pid}`);
+  } else {
+    const success = processInfo.process.kill();
+    if (!success) {
+      throw new Error(`Failed to kill process ${processId}`);
+    }
+  }
 }

@@ -80,7 +80,7 @@ export const createProcessStore = () => {
           args: string[],
           label: string,
         ) => {
-          const processId = await addProcessAction(command, args, label); // Update to pass label
+          const processId = await addProcessAction(command, args, label);
 
           set((state) => {
             state.processes = {
