@@ -68,7 +68,7 @@ export const createProcessStore = () => {
         },
 
         fetchAllowedCommands: async () => {
-          const allowedCommands = await getAllowedCommandsAction(); // TODO: make them run concurrently
+          const allowedCommands = await getAllowedCommandsAction();
 
           set((state) => {
             state.allowedCommands = allowedCommands;

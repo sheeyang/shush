@@ -43,7 +43,7 @@ export default function ManageCommandsCard() {
 
       toast.success('Command added successfully');
       setNewCommand('');
-      processActions.fetchAllowedCommands(); // TODO: This fetches all processes too, which is inefficient
+      processActions.fetchAllowedCommands();
     } catch (error) {
       if (error instanceof Error) {
         toast.error(

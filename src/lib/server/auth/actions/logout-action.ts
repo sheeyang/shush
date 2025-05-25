@@ -31,5 +31,5 @@ export async function logoutAction(): Promise<ActionResult> {
   }
   await invalidateSession(session.id);
   await deleteSessionTokenCookie();
-  return redirect('/login');
+  redirect('/login');
 }

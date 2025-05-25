@@ -1,4 +1,3 @@
-// TODO: not in use
 import 'server-only';
 
 import { Readable } from 'stream';

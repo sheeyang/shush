@@ -96,7 +96,6 @@ export async function loginAction(
   const session = await createSession(sessionToken, user.id);
   await setSessionTokenCookie(sessionToken, session.expiresAt);
 
-  // Add a return statement here
   return {
     success: true,
     message: 'Login successful',

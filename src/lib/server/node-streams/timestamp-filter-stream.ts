@@ -4,10 +4,9 @@ import { ProcessOutputInfoServer } from '@/interfaces/process';
 import { Transform, TransformCallback } from 'stream';
 import logger from '@/lib/logger';
 
-// TODO: this may not be needed anymore
-
 /**
  * Transform stream that filters out any output chunks created before the specified lastOutputTime
+ * @deprecated This is no longer needed but keep just in case
  */
 export class TimestampFilterStream extends Transform {
   private lastOutputTime: Date;

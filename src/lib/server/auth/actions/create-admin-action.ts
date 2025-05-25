@@ -106,5 +106,5 @@ export async function createAdminAction(
   const sessionToken = generateSessionToken();
   const session = await createSession(sessionToken, user.id);
   await setSessionTokenCookie(sessionToken, session.expiresAt);
-  return redirect('/'); // TODO: don't return redirect
+  redirect('/');
 }

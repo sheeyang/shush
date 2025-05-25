@@ -55,7 +55,7 @@ export async function connectProcessStream(
 
   pipeline(
     eventStream,
-    // new TimestampFilterStream(lastOutputTime), // TODO: this may not be needed anymore
+    // new TimestampFilterStream(lastOutputTime), // No longer needed
     new FormatOutputReverseTransform(),
     outputStream,
   ).catch((err) => {
